@@ -1,24 +1,18 @@
-# Purchase History LWC Sample
+# Salesforce DX Project: Next Steps
 
-This project contains a Salesforce Lightning Web Component (LWC) and Apex classes that expose a purchase history view for Account records. The component surfaces order line item details, including product data, and can be added to Account record pages, app pages, or the home page.
+Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
 
-## Contents
+## How Do You Plan to Deploy Your Changes?
 
-- `force-app/main/default/classes/PurchaseHistoryController.cls`: Apex controller that aggregates purchase history information from related Order and OrderItem records.
-- `force-app/main/default/classes/PurchaseHistoryControllerTest.cls`: Apex unit tests covering the purchase history controller.
-- `force-app/main/default/lwc/purchaseHistory/`: Lightning Web Component that renders the purchase history data in a data table.
+Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
 
-## Deployment
+## Configure Your Salesforce DX Project
 
-Use Salesforce CLI to deploy the metadata to your org:
+The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
 
-```bash
-sfdx force:source:deploy -p force-app/main/default
-```
+## Read All About It
 
-## Usage
-
-1. Deploy the metadata to your Salesforce org.
-2. Add the **Purchase History** component to an Account record page using the Lightning App Builder.
-3. Save and activate the page.
-4. Navigate to an Account record with related Orders and Order Items to see the purchase history.
+- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
+- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
+- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
+- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
