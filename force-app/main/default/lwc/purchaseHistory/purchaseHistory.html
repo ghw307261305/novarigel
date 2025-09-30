@@ -1,0 +1,29 @@
+<template>
+    <lightning-card title="Purchase History" icon-name="custom:custom63">
+        <div class="slds-p-horizontal_medium">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading purchase history" size="medium"></lightning-spinner>
+            </template>
+            <template if:true={error}>
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                    <span class="slds-assistive-text">Error</span>
+                    <h2>{errorMessage}</h2>
+                </div>
+            </template>
+            <template if:true={hasData}>
+                <lightning-datatable key-field="orderItemId"
+                                     data={purchaseHistory}
+                                     columns={columns}
+                                     hide-checkbox-column>
+                </lightning-datatable>
+            </template>
+            <template if:false={hasData}>
+                <template if:false={isLoading}>
+                    <p class="slds-text-body_regular slds-text-align_center empty-message">
+                        No purchase history was found for this account.
+                    </p>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template>

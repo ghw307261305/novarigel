@@ -1,0 +1,4 @@
+.empty-message {
+    color: var(--lwc-colorTextWeak, #706e6b);
+    margin: var(--lwc-spacingMedium, 1rem) 0;
+}
