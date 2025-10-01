@@ -1,27 +1,80 @@
 <template>
-    <lightning-card title="Purchase History" icon-name="custom:custom63">
-        <div class="slds-p-horizontal_medium">
+    <lightning-card class="purchase-history-card" title="購入履歴" icon-name="standard:orders">
+        <div class="purchase-history">
             <template if:true={isLoading}>
-                <lightning-spinner alternative-text="Loading purchase history" size="medium"></lightning-spinner>
+                <div class="state state--loading">
+                    <lightning-spinner alternative-text="購入履歴を読み込み中" size="medium"></lightning-spinner>
+                </div>
             </template>
+
             <template if:true={error}>
-                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
-                    <span class="slds-assistive-text">Error</span>
+                <div class="state state--error slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                    <span class="slds-assistive-text">エラー</span>
                     <h2>{errorMessage}</h2>
                 </div>
             </template>
+
             <template if:true={hasData}>
-                <lightning-datatable key-field="orderItemId"
-                                     data={purchaseHistory}
-                                     columns={columns}
-                                     hide-checkbox-column>
-                </lightning-datatable>
+                <div class="order-list">
+                    <template for:each={orders} for:item="order">
+                        <article key={order.orderId} class="order-card">
+                            <header class="order-card__header">
+                                <div class="order-card__summary">
+                                    <p class="order-card__date">注文日: {order.purchaseDateFormatted}</p>
+                                    <p class="order-card__total">合計: {order.totalPriceFormatted}</p>
+                                    <p class="order-card__number">注文番号: {order.orderNumber}</p>
+                                    <p class="order-card__status">配送状況: {order.statusText}</p>
+                                </div>
+                                <div class="order-card__actions">
+                                    <button class="order-action order-action--primary" type="button">配送状況を確認</button>
+                                    <button class="order-action" type="button">商品を再度購入</button>
+                                    <button class="order-action" type="button">注文内容を表示</button>
+                                </div>
+                            </header>
+
+                            <ul class="order-items">
+                                <template for:each={order.items} for:item="orderItem">
+                                    <li key={orderItem.orderItemId} class="order-item">
+                                        <div class="order-item__thumb">
+                                            <span class="order-item__initial">{orderItem.initial}</span>
+                                        </div>
+                                        <div class="order-item__details">
+                                            <h3 class="order-item__title">{orderItem.productName}</h3>
+                                            <template if:true={orderItem.productCode}>
+                                                <p class="order-item__code">商品コード: {orderItem.productCode}</p>
+                                            </template>
+                                            <p class="order-item__description">{orderItem.productDescription}</p>
+                                            <div class="order-item__meta">
+                                                <template if:true={orderItem.quantityFormatted}>
+                                                    <span class="order-item__meta-item">数量: {orderItem.quantityFormatted}</span>
+                                                </template>
+                                                <template if:true={orderItem.unitPriceFormatted}>
+                                                    <span class="order-item__meta-item">単価: {orderItem.unitPriceFormatted}</span>
+                                                </template>
+                                                <template if:true={orderItem.totalPriceFormatted}>
+                                                    <span class="order-item__meta-item order-item__meta-item--highlight">小計: {orderItem.totalPriceFormatted}</span>
+                                                </template>
+                                            </div>
+                                            <div class="order-item__buttons">
+                                                <button class="item-action" type="button">商品を評価</button>
+                                                <button class="item-action" type="button">返品・交換</button>
+                                            </div>
+                                        </div>
+                                    </li>
+                                </template>
+                            </ul>
+
+                            <footer class="order-card__footer">
+                                <p class="order-card__count">{order.itemCountText}</p>
+                            </footer>
+                        </article>
+                    </template>
+                </div>
             </template>
+
             <template if:false={hasData}>
                 <template if:false={isLoading}>
-                    <p class="slds-text-body_regular slds-text-align_center empty-message">
-                        No purchase history was found for this account.
-                    </p>
+                    <p class="empty-message">この取引先の購入履歴は見つかりませんでした。</p>
                 </template>
             </template>
         </div>
