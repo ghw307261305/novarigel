@@ -21,6 +21,12 @@
         <name>ApexTrigger</name>
     </types>
     <types>
+        <members>myComponent</members>
+        <members>purchaseHistory</members>
+        <members>*</members>
+        <name>LightningComponentBundle</name>
+    </types>
+    <types>
         <members>*</members>
         <name>AuraDefinitionBundle</name>
     </types>
