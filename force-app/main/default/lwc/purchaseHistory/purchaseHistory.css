@@ -1,3 +1,51 @@
+.history-card {
+    display: flex;
+}
+
+.history-card .slds-card__body {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: var(--lwc-spacingSmall, 0.75rem);
+}
+
+.card-header {
+    border-bottom: 1px solid var(--lwc-colorBorder, #dddbda);
+    padding-bottom: var(--lwc-spacingXSmall, 0.5rem);
+}
+
+.card-header__title {
+    font-weight: var(--lwc-fontWeightBold, 700);
+    margin: 0;
+}
+
+.card-header__subtitle {
+    color: var(--lwc-colorTextWeak, #706e6b);
+    margin: 0;
+}
+
+.detail-list {
+    display: grid;
+    gap: var(--lwc-spacingSmall, 0.75rem);
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--lwc-spacingSmall, 0.75rem);
+}
+
+.detail-row dt {
+    font-weight: var(--lwc-fontWeightBold, 700);
+    margin: 0;
+}
+
+.detail-row dd {
+    margin: 0;
+    text-align: right;
+    flex: 1;
+}
+
 .empty-message {
     color: var(--lwc-colorTextWeak, #706e6b);
     margin: var(--lwc-spacingMedium, 1rem) 0;
