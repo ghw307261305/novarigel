@@ -1,26 +1,60 @@
 <template>
-    <lightning-card title="Purchase History" icon-name="custom:custom63">
+    <lightning-card title="購入履歴" icon-name="custom:custom63">
         <div class="slds-p-horizontal_medium">
             <template if:true={isLoading}>
-                <lightning-spinner alternative-text="Loading purchase history" size="medium"></lightning-spinner>
+                <lightning-spinner alternative-text="購入履歴を読み込み中" size="medium"></lightning-spinner>
             </template>
             <template if:true={error}>
                 <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
-                    <span class="slds-assistive-text">Error</span>
+                    <span class="slds-assistive-text">エラー</span>
                     <h2>{errorMessage}</h2>
                 </div>
             </template>
             <template if:true={hasData}>
-                <lightning-datatable key-field="orderItemId"
-                                     data={purchaseHistory}
-                                     columns={columns}
-                                     hide-checkbox-column>
-                </lightning-datatable>
+                <div class="history-grid slds-grid slds-wrap slds-gutters">
+                    <template for:each={purchaseHistory} for:item="item">
+                        <article key={item.orderItemId}
+                                 class="history-card slds-card slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3">
+                            <div class="slds-card__body slds-card__body_inner">
+                                <header class="card-header">
+                                    <p class="card-header__title">注文番号: {item.orderNumber}</p>
+                                    <p class="card-header__subtitle">購入日: {item.purchaseDateFormatted}</p>
+                                </header>
+                                <dl class="detail-list">
+                                    <div class="detail-row">
+                                        <dt>状態</dt>
+                                        <dd>{item.status}</dd>
+                                    </div>
+                                    <div class="detail-row">
+                                        <dt>商品名</dt>
+                                        <dd>{item.productName}</dd>
+                                    </div>
+                                    <div class="detail-row">
+                                        <dt>商品コード</dt>
+                                        <dd>{item.productCode}</dd>
+                                    </div>
+                                    <div class="detail-row">
+                                        <dt>数量</dt>
+                                        <dd>{item.quantityFormatted}</dd>
+                                    </div>
+                                    <div class="detail-row">
+                                        <dt>単価</dt>
+                                        <dd>{item.unitPriceFormatted}</dd>
+                                    </div>
+                                    <div class="detail-row">
+                                        <dt>合計金額</dt>
+                                        <dd>{item.totalPriceFormatted}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </article>
+                    </template>
+                </div>
             </template>
             <template if:false={hasData}>
                 <template if:false={isLoading}>
                     <p class="slds-text-body_regular slds-text-align_center empty-message">
-                        No purchase history was found for this account.
+                        この取引先の購入履歴は見つかりませんでした。
                     </p>
                 </template>
             </template>
