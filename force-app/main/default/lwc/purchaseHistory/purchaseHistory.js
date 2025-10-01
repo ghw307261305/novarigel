@@ -1,60 +1,49 @@
-import { LightningElement, api, track } from 'lwc';
+import { LightningElement, api } from 'lwc';
 import getPurchaseHistory from '@salesforce/apex/PurchaseHistoryController.getPurchaseHistory';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
-const columns = [
-    { label: 'Order Number', fieldName: 'orderNumber', type: 'text', sortable: true },
-    { label: 'Purchase Date', fieldName: 'purchaseDate', type: 'date-local', sortable: true },
-    { label: 'Status', fieldName: 'status', type: 'text' },
-    { label: 'Product Name', fieldName: 'productName', type: 'text' },
-    { label: 'Product Code', fieldName: 'productCode', type: 'text' },
-    { label: 'Quantity', fieldName: 'quantity', type: 'number' },
-    { label: 'Unit Price', fieldName: 'unitPrice', type: 'currency', typeAttributes: { currencyCode: { fieldName: 'currencyIsoCode' } } },
-    { label: 'Total Price', fieldName: 'totalPrice', type: 'currency', typeAttributes: { currencyCode: { fieldName: 'currencyIsoCode' } } }
-];
-
 export default class PurchaseHistory extends LightningElement {
     @api recordId;
-    @track purchaseHistory = [];
-    @track error;
+    orders = [];
+    error;
     isLoading = false;
-
-    columns = columns;
 
     connectedCallback() {
         this.loadPurchaseHistory();
     }
 
     get hasData() {
-        return this.purchaseHistory && this.purchaseHistory.length > 0;
+        return this.orders && this.orders.length > 0;
     }
 
     get errorMessage() {
-        return this.error?.body?.message || this.error?.message || 'An unexpected error occurred.';
+        return (
+            this.error?.body?.message ||
+            this.error?.message ||
+            '予期せぬエラーが発生しました。'
+        );
     }
 
     async loadPurchaseHistory() {
         if (!this.recordId) {
-            this.error = { message: 'The component requires an Account record Id to display purchase history.' };
+            this.error = {
+                message: '購入履歴を表示するには取引先のレコードIDが必要です。'
+            };
             return;
         }
 
         this.isLoading = true;
         this.error = undefined;
+        this.orders = [];
 
         try {
             const history = await getPurchaseHistory({ accountId: this.recordId });
-            this.purchaseHistory = history?.map((item) => ({
-                ...item,
-                purchaseDate: item.purchaseDate,
-                unitPrice: item.unitPrice,
-                totalPrice: item.totalPrice
-            })) || [];
+            this.orders = this.groupHistoryByOrder(history || []);
         } catch (error) {
             this.error = error;
             this.dispatchEvent(
                 new ShowToastEvent({
-                    title: 'Error loading purchase history',
+                    title: '購入履歴の読み込みエラー',
                     message: this.errorMessage,
                     variant: 'error'
                 })
@@ -62,5 +51,160 @@ export default class PurchaseHistory extends LightningElement {
         } finally {
             this.isLoading = false;
         }
+    }
+
+    groupHistoryByOrder(historyItems) {
+        if (!Array.isArray(historyItems) || historyItems.length === 0) {
+            return [];
+        }
+
+        const ordersById = new Map();
+
+        historyItems.forEach((item) => {
+            const orderId = item.orderId;
+            if (!orderId) {
+                return;
+            }
+
+            if (!ordersById.has(orderId)) {
+                ordersById.set(orderId, {
+                    orderId,
+                    orderNumber: item.orderNumber,
+                    purchaseDate: item.purchaseDate,
+                    status: item.status,
+                    currencyIsoCode: item.currencyIsoCode || 'JPY',
+                    totalPrice: 0,
+                    items: [],
+                    itemCount: 0
+                });
+            }
+
+            const order = ordersById.get(orderId);
+            const hasQuantity =
+                item.quantity !== null && item.quantity !== undefined;
+            const quantity = hasQuantity
+                ? this.getNumericValue(item.quantity)
+                : null;
+            const unitPrice = this.getNumericValue(item.unitPrice);
+            const totalPrice = this.getNumericValue(item.totalPrice);
+
+            order.items.push({
+                orderItemId: item.orderItemId,
+                productName: item.productName || '商品名未設定',
+                productCode: item.productCode,
+                productDescription:
+                    this.formatDescription(item.productDescription),
+                quantityFormatted: hasQuantity
+                    ? this.formatNumber(quantity)
+                    : '',
+                unitPriceFormatted: this.formatCurrency(
+                    unitPrice,
+                    order.currencyIsoCode
+                ),
+                totalPriceFormatted: this.formatCurrency(
+                    totalPrice,
+                    order.currencyIsoCode
+                ),
+                initial: this.getInitial(item.productName)
+            });
+
+            order.totalPrice += totalPrice;
+            const quantityForCount =
+                hasQuantity && quantity > 0 ? quantity : 1;
+            order.itemCount += quantityForCount;
+        });
+
+        return Array.from(ordersById.values()).map((order) => ({
+            ...order,
+            purchaseDateFormatted: this.formatDate(order.purchaseDate),
+            totalPriceFormatted: this.formatCurrency(
+                order.totalPrice,
+                order.currencyIsoCode
+            ),
+            statusText: order.status || '不明',
+            itemCountText: this.formatItemCount(order.itemCount)
+        }));
+    }
+
+    formatDate(value) {
+        if (!value) {
+            return '';
+        }
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return '';
+        }
+
+        return new Intl.DateTimeFormat('ja-JP', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }).format(date);
+    }
+
+    formatCurrency(value, currencyIsoCode = 'JPY') {
+        if (value === null || value === undefined || Number.isNaN(value)) {
+            return '';
+        }
+
+        return new Intl.NumberFormat('ja-JP', {
+            style: 'currency',
+            currency: currencyIsoCode
+        }).format(value);
+    }
+
+    formatNumber(value) {
+        if (value === null || value === undefined || Number.isNaN(value)) {
+            return '';
+        }
+
+        return new Intl.NumberFormat('ja-JP').format(value);
+    }
+
+    formatDescription(description) {
+        if (!description) {
+            return 'この商品の詳細情報は登録されていません。';
+        }
+
+        const trimmed = description.trim();
+        if (!trimmed) {
+            return 'この商品の詳細情報は登録されていません。';
+        }
+
+        return trimmed.length > 120
+            ? `${trimmed.substring(0, 120)}…`
+            : trimmed;
+    }
+
+    getInitial(name) {
+        if (!name) {
+            return '商';
+        }
+
+        const trimmed = name.trim();
+        return trimmed ? trimmed.charAt(0) : '商';
+    }
+
+    getNumericValue(value) {
+        if (value === null || value === undefined) {
+            return 0;
+        }
+
+        const number = Number(value);
+        return Number.isNaN(number) ? 0 : number;
+    }
+
+    formatItemCount(count) {
+        const value = this.getNumericValue(count);
+        if (value <= 0) {
+            return '商品は含まれていません';
+        }
+
+        if (value === 1) {
+            return '商品数: 1点';
+        }
+
+        return `商品数: ${this.formatNumber(value)}点`;
     }
 }
