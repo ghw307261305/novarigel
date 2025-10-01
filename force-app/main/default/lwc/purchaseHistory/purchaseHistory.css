@@ -3,7 +3,7 @@
 }
 
 .purchase-history {
-    background-color: #f6f7f8;
+    /* background-color: #f6f7f8; */
     padding: var(--lwc-spacingLarge, 1.5rem) var(--lwc-spacingMedium, 1rem);
 }
 

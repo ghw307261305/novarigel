@@ -3,7 +3,7 @@ import getPurchaseHistory from '@salesforce/apex/PurchaseHistoryController.getPu
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class PurchaseHistory extends LightningElement {
-    @api recordId;
+    @api recordId = '001gK00000KKvNCQA1';
     orders = [];
     error;
     isLoading = false;
