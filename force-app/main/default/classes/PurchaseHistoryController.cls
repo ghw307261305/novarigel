@@ -1,3 +1,10 @@
+/**
+ * @description       : 
+ * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+ * @group             : 
+ * @last modified on  : 10-01-2025
+ * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+**/
 public with sharing class PurchaseHistoryController {
     public class PurchaseHistoryItem {
         @AuraEnabled public Id orderId { get; set; }
@@ -11,7 +18,7 @@ public with sharing class PurchaseHistoryController {
         @AuraEnabled public String productName { get; set; }
         @AuraEnabled public String productCode { get; set; }
         @AuraEnabled public String productDescription { get; set; }
-        @AuraEnabled public String currencyIsoCode { get; set; }
+        // @AuraEnabled public String currencyIsoCode { get; set; }
     }
 
     @AuraEnabled(cacheable=true)
@@ -26,7 +33,7 @@ public with sharing class PurchaseHistoryController {
                    Order.OrderNumber,
                    Order.EffectiveDate,
                    Order.Status,
-                   Order.CurrencyIsoCode,
+                //    Order.CurrencyIsoCode,
                    Quantity,
                    UnitPrice,
                    TotalPrice,
@@ -52,7 +59,7 @@ public with sharing class PurchaseHistoryController {
             historyItem.productName = item.Product2 != null ? item.Product2.Name : null;
             historyItem.productCode = item.Product2 != null ? item.Product2.ProductCode : null;
             historyItem.productDescription = item.Product2 != null ? item.Product2.Description : null;
-            historyItem.currencyIsoCode = item.Order.CurrencyIsoCode;
+            // historyItem.currencyIsoCode = item.Order.CurrencyIsoCode;
             results.add(historyItem);
         }
 
