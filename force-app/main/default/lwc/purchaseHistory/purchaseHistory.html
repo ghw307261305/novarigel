@@ -1,5 +1,17 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             : 
+  @last modified on  : 10-01-2025
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+-->
 <template>
-    <lightning-card class="purchase-history-card" title="購入履歴" icon-name="standard:orders">
+    <lightning-card class="purchase-history-card">
+        <div slot="title" class="custom-card-header">
+            <lightning-icon icon-name="standard:orders" size="large" class="custom-icon">
+            </lightning-icon>
+            <span class="custom-card-title">購入履歴</span>
+        </div>
         <div class="purchase-history">
             <template if:true={isLoading}>
                 <div class="state state--loading">
@@ -14,7 +26,8 @@
             </template>
 
             <template if:true={error}>
-                <div class="state state--error slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                <div class="state state--error slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error"
+                    role="alert">
                     <span class="slds-assistive-text">エラー</span>
                     <h2>{errorMessage}</h2>
                 </div>
@@ -52,13 +65,17 @@
                                             <p class="order-item__description">{orderItem.productDescription}</p>
                                             <div class="order-item__meta">
                                                 <template if:true={orderItem.quantityFormatted}>
-                                                    <span class="order-item__meta-item">数量: {orderItem.quantityFormatted}</span>
+                                                    <span class="order-item__meta-item">数量:
+                                                        {orderItem.quantityFormatted}</span>
                                                 </template>
                                                 <template if:true={orderItem.unitPriceFormatted}>
-                                                    <span class="order-item__meta-item">単価: {orderItem.unitPriceFormatted}</span>
+                                                    <span class="order-item__meta-item">単価:
+                                                        {orderItem.unitPriceFormatted}</span>
                                                 </template>
                                                 <template if:true={orderItem.totalPriceFormatted}>
-                                                    <span class="order-item__meta-item order-item__meta-item--highlight">小計: {orderItem.totalPriceFormatted}</span>
+                                                    <span
+                                                        class="order-item__meta-item order-item__meta-item--highlight">小計:
+                                                        {orderItem.totalPriceFormatted}</span>
                                                 </template>
                                             </div>
                                             <div class="order-item__buttons">
