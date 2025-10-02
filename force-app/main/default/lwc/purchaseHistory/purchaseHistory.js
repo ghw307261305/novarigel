@@ -1,12 +1,15 @@
 import { LightningElement, api } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
 import getPurchaseHistory from '@salesforce/apex/PurchaseHistoryController.getPurchaseHistory';
+import launchReturnsAgent from '@salesforce/apex/NovaRigelReturnsAgentController.launchReturnsAgent';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
-export default class PurchaseHistory extends LightningElement {
+export default class PurchaseHistory extends NavigationMixin(LightningElement) {
     @api recordId = '001gK00000KKvNCQA1';
     orders = [];
     error;
     isLoading = false;
+    isLaunchingAgent = false;
 
     connectedCallback() {
         this.loadPurchaseHistory();
@@ -50,6 +53,50 @@ export default class PurchaseHistory extends LightningElement {
             );
         } finally {
             this.isLoading = false;
+        }
+    }
+
+    async handleReturnExchange(event) {
+        const button = event.currentTarget;
+        const { orderId, orderItemId, orderNumber, productName } = button.dataset;
+        const contextLabel =
+            productName && orderNumber
+                ? `${productName}（注文番号: ${orderNumber}）`
+                : productName || (orderNumber ? `注文番号: ${orderNumber}` : '商品');
+
+        this.isLaunchingAgent = true;
+
+        try {
+            const response = await launchReturnsAgent({ orderId, orderItemId });
+
+            if (response?.launchUrl) {
+                this[NavigationMixin.Navigate]({
+                    type: 'standard__webPage',
+                    attributes: {
+                        url: response.launchUrl
+                    }
+                });
+            }
+
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: '返品・交換サポート',
+                    message:
+                        response?.message ||
+                        `${contextLabel}の返品・交換サポートを開始しました。`,
+                    variant: 'success'
+                })
+            );
+        } catch (error) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: '返品・交換サポートの起動に失敗しました',
+                    message: this.getErrorMessageFrom(error),
+                    variant: 'error'
+                })
+            );
+        } finally {
+            this.isLaunchingAgent = false;
         }
     }
 
@@ -206,5 +253,27 @@ export default class PurchaseHistory extends LightningElement {
         }
 
         return `商品数: ${this.formatNumber(value)}点`;
+    }
+
+    getErrorMessageFrom(error) {
+        const defaultMessage = '予期せぬエラーが発生しました。時間をおいて再度お試しください。';
+
+        if (!error) {
+            return defaultMessage;
+        }
+
+        if (Array.isArray(error.body)) {
+            return error.body.map((item) => item.message).join(', ');
+        }
+
+        if (typeof error.body?.message === 'string') {
+            return error.body.message;
+        }
+
+        if (typeof error.message === 'string') {
+            return error.message;
+        }
+
+        return defaultMessage;
     }
 }
