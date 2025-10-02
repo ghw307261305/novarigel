@@ -13,6 +13,23 @@
     --slds-c-card-color-border: transparent;
     --slds-c-card-shadow: none;
     --slds-c-card-radius-border: 0;
+    --slds-c-card-heading-font-size: 24px;
+}
+
+.purchase-history-card .slds-card__header lightning-icon {
+    --slds-c-icon-radius-border: 12px;
+    --slds-c-icon-size: 2.5rem;
+}
+
+.purchase-history-card .slds-card__header .slds-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.custom-card-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-left: 1rem;
 }
 
 .state {
