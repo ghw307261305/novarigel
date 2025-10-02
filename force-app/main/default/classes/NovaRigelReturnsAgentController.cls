@@ -35,7 +35,17 @@ public with sharing class NovaRigelReturnsAgentController {
 
         request.setBody(JSON.serialize(payload));
 
-        HttpResponse response = http.send(request);
+        HttpResponse response;
+        try {
+            response = http.send(request);
+        } catch (System.CalloutException e) {
+            String message = '返品・交換サポートの起動に失敗しました。外部サービスの認証情報（NovaRigel_Agentforce）や権限を確認してください。';
+            if (!String.isBlank(e.getMessage())) {
+                message += ' 詳細: ' + e.getMessage();
+            }
+
+            throw new AuraHandledException(message);
+        }
         Integer statusCode = response.getStatusCode();
         if (statusCode >= 200 && statusCode < 300) {
             String body = response.getBody();
