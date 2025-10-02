@@ -73,4 +73,44 @@ describe('c-purchase-history', () => {
         });
         expect(handler).toHaveBeenCalled();
     });
+
+    it('shows an error toast when order context is missing', async () => {
+        const element = createElement('c-purchase-history', {
+            is: PurchaseHistory
+        });
+        document.body.appendChild(element);
+
+        await Promise.resolve();
+
+        element.orders = [
+            {
+                items: [
+                    {
+                        productName: '商品情報なし'
+                    }
+                ]
+            }
+        ];
+
+        await Promise.resolve();
+
+        const button = element.shadowRoot.querySelector('button.item-action');
+        expect(button).not.toBeNull();
+
+        const handler = jest.fn();
+        element.addEventListener(ShowToastEventName, handler);
+
+        button.click();
+
+        await Promise.resolve();
+
+        expect(launchReturnsAgentUiMock).not.toHaveBeenCalled();
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(handler.mock.calls[0][0].detail).toMatchObject({
+            title: '返品・交換サポート',
+            message:
+                '返品・交換対象の商品情報を取得できませんでした。時間をおいて再度お試しください。',
+            variant: 'error'
+        });
+    });
 });
