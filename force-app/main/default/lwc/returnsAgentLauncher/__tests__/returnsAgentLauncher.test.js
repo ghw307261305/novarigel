@@ -17,6 +17,7 @@ describe('returnsAgentLauncher.launchReturnsAgentUi', () => {
     });
 
     it('throws when embedded service is not available', async () => {
+
         jest.useFakeTimers();
 
         const promise = launchReturnsAgentUi({
