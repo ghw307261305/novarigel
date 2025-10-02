@@ -1,8 +1,8 @@
 import { LightningElement, api } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import getPurchaseHistory from '@salesforce/apex/PurchaseHistoryController.getPurchaseHistory';
-import launchReturnsAgent from '@salesforce/apex/NovaRigelReturnsAgentController.launchReturnsAgent';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { launchReturnsAgentUi } from 'c/returnsAgentLauncher';
 
 export default class PurchaseHistory extends NavigationMixin(LightningElement) {
     @api recordId = '001gK00000KKvNCQA1';
@@ -67,23 +67,15 @@ export default class PurchaseHistory extends NavigationMixin(LightningElement) {
         this.isLaunchingAgent = true;
 
         try {
-            const response = await launchReturnsAgent({ orderId, orderItemId });
-
-            if (response?.launchUrl) {
-                this[NavigationMixin.Navigate]({
-                    type: 'standard__webPage',
-                    attributes: {
-                        url: response.launchUrl
-                    }
-                });
-            }
+            await launchReturnsAgentUi({
+                context: { orderId, orderItemId },
+                navigate: (pageReference) => this[NavigationMixin.Navigate](pageReference)
+            });
 
             this.dispatchEvent(
                 new ShowToastEvent({
                     title: '返品・交換サポート',
-                    message:
-                        response?.message ||
-                        `${contextLabel}の返品・交換サポートを開始しました。`,
+                    message: `${contextLabel}の返品・交換サポートを開始しました。`,
                     variant: 'success'
                 })
             );
