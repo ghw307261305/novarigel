@@ -58,10 +58,23 @@ export default class PurchaseHistory extends LightningElement {
     async handleReturnExchange(event) {
         const button = event.currentTarget;
         const { orderId, orderItemId, orderNumber, productName } = button.dataset;
+        const hasOrderContext = Boolean(orderId || orderItemId);
         const contextLabel =
             productName && orderNumber
                 ? `${productName}（注文番号: ${orderNumber}）`
                 : productName || (orderNumber ? `注文番号: ${orderNumber}` : '商品');
+
+        if (!hasOrderContext) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: '返品・交換サポート',
+                    message:
+                        '返品・交換対象の商品情報を取得できませんでした。時間をおいて再度お試しください。',
+                    variant: 'error'
+                })
+            );
+            return;
+        }
 
         this.isLaunchingAgent = true;
 
