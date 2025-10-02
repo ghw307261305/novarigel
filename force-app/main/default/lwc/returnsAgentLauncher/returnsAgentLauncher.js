@@ -1,4 +1,11 @@
 const EMBEDDED_SERVICE_GLOBAL = 'embedded_svc';
+const EMBEDDED_SERVICE_FALLBACKS = [
+    'embeddedservice_bootstrap',
+    'embeddedserviceBootstrap'
+];
+const EMBEDDED_SERVICE_POLL_ATTEMPTS = 10;
+const EMBEDDED_SERVICE_POLL_INTERVAL = 150;
+
 const DEFAULT_DETAIL_LABELS = {
     orderId: '注文ID',
     orderItemId: '注文明細ID'
@@ -16,13 +23,83 @@ function getWindowObject() {
     return window;
 }
 
-function resolveEmbeddedService(embeddedService) {
+function hasServiceInterface(candidate) {
+    if (!candidate) {
+        return false;
+    }
+
+    if (candidate.liveAgentAPI && typeof candidate.liveAgentAPI.startChat === 'function') {
+        return true;
+    }
+
+    return (
+        typeof candidate.openChat === 'function' ||
+        typeof candidate.openHelp === 'function' ||
+        typeof candidate.bootstrapEmbeddedService === 'function'
+    );
+}
+
+function findEmbeddedServiceGlobal(win) {
+    if (!win) {
+        return undefined;
+    }
+
+    const primary = win[EMBEDDED_SERVICE_GLOBAL];
+    if (hasServiceInterface(primary)) {
+        return primary;
+    }
+
+    for (const fallback of EMBEDDED_SERVICE_FALLBACKS) {
+        const candidate = win[fallback];
+        if (candidate) {
+            if (
+                candidate.embeddedserviceBootstrap &&
+                typeof candidate.embeddedserviceBootstrap === 'object'
+            ) {
+                const nested = candidate.embeddedserviceBootstrap;
+                if (hasServiceInterface(nested)) {
+                    return nested;
+                }
+            }
+
+            if (hasServiceInterface(candidate)) {
+                return candidate;
+            }
+        }
+    }
+
+    return undefined;
+}
+
+function delay(duration) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, duration);
+    });
+}
+
+async function waitForEmbeddedService(win) {
+    let attemptsRemaining = EMBEDDED_SERVICE_POLL_ATTEMPTS;
+
+    while (attemptsRemaining > 0) {
+        const service = findEmbeddedServiceGlobal(win);
+        if (service) {
+            return service;
+        }
+
+        attemptsRemaining -= 1;
+        await delay(EMBEDDED_SERVICE_POLL_INTERVAL);
+    }
+
+    return undefined;
+}
+
+async function resolveEmbeddedService(embeddedService) {
     if (embeddedService) {
         return embeddedService;
     }
 
     const win = getWindowObject();
-    const service = win ? win[EMBEDDED_SERVICE_GLOBAL] : undefined;
+    const service = await waitForEmbeddedService(win);
 
     if (!service) {
         throw new Error(
@@ -112,8 +189,7 @@ export async function launchReturnsAgentUi({ context, embeddedService } = {}) {
             '返品・交換サポートを起動するには注文または注文明細の識別子が必要です。'
         );
     }
-
-    const service = resolveEmbeddedService(embeddedService);
+    const service = await resolveEmbeddedService(embeddedService);
     const settings = getEmbeddedServiceSettings(service);
     const prechatDetails = buildPrechatDetails(context);
 
