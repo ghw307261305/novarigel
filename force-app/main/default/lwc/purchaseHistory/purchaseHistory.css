@@ -3,6 +3,7 @@
 }
 
 .purchase-history {
+    position: relative;
     /* background-color: #f6f7f8; */
     padding: var(--lwc-spacingLarge, 1.5rem) var(--lwc-spacingMedium, 1rem);
 }
@@ -19,6 +20,13 @@
     justify-content: center;
     align-items: center;
     padding: var(--lwc-spacingXLarge, 2rem) 0;
+}
+
+.state--overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 5;
 }
 
 .state--error {
