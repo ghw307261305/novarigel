@@ -5,6 +5,7 @@ const EMBEDDED_SERVICE_FALLBACKS = [
 ];
 const EMBEDDED_SERVICE_POLL_ATTEMPTS = 10;
 const EMBEDDED_SERVICE_POLL_INTERVAL = 150;
+
 const DEFAULT_DETAIL_LABELS = {
     orderId: '注文ID',
     orderItemId: '注文明細ID'
@@ -188,7 +189,6 @@ export async function launchReturnsAgentUi({ context, embeddedService } = {}) {
             '返品・交換サポートを起動するには注文または注文明細の識別子が必要です。'
         );
     }
-
     const service = await resolveEmbeddedService(embeddedService);
     const settings = getEmbeddedServiceSettings(service);
     const prechatDetails = buildPrechatDetails(context);
