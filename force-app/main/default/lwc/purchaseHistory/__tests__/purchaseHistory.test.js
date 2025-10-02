@@ -10,15 +10,12 @@ jest.mock(
     { virtual: true }
 );
 
-const launchReturnsAgentMock = jest.fn().mockResolvedValue({
-    launchUrl: 'https://example.com/agent',
-    message: 'Launch message'
-});
+const launchReturnsAgentUiMock = jest.fn().mockResolvedValue({});
 
 jest.mock(
-    '@salesforce/apex/NovaRigelReturnsAgentController.launchReturnsAgent',
+    'c/returnsAgentLauncher',
     () => ({
-        default: (...args) => launchReturnsAgentMock(...args)
+        launchReturnsAgentUi: (...args) => launchReturnsAgentUiMock(...args)
     }),
     { virtual: true }
 );
@@ -31,7 +28,7 @@ describe('c-purchase-history', () => {
         jest.clearAllMocks();
     });
 
-    it('invokes the returns agent Apex method when the button is clicked', async () => {
+    it('launches the returns agent workspace when the button is clicked', async () => {
         const element = createElement('c-purchase-history', {
             is: PurchaseHistory
         });
@@ -66,11 +63,13 @@ describe('c-purchase-history', () => {
 
         await Promise.resolve();
 
-        expect(launchReturnsAgentMock).toHaveBeenCalledTimes(1);
-        expect(launchReturnsAgentMock.mock.calls[0][0]).toEqual({
+        expect(launchReturnsAgentUiMock).toHaveBeenCalledTimes(1);
+        const launchArgs = launchReturnsAgentUiMock.mock.calls[0][0];
+        expect(launchArgs.context).toEqual({
             orderId: '801000000000001AAA',
             orderItemId: '802000000000001AAA'
         });
+        expect(typeof launchArgs.navigate).toBe('function');
         expect(handler).toHaveBeenCalled();
     });
 });
