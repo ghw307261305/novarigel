@@ -1,10 +1,9 @@
 import { LightningElement, api } from 'lwc';
-import { NavigationMixin } from 'lightning/navigation';
 import getPurchaseHistory from '@salesforce/apex/PurchaseHistoryController.getPurchaseHistory';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { launchReturnsAgentUi } from 'c/returnsAgentLauncher';
 
-export default class PurchaseHistory extends NavigationMixin(LightningElement) {
+export default class PurchaseHistory extends LightningElement {
     @api recordId = '001gK00000KKvNCQA1';
     orders = [];
     error;
@@ -68,8 +67,7 @@ export default class PurchaseHistory extends NavigationMixin(LightningElement) {
 
         try {
             await launchReturnsAgentUi({
-                context: { orderId, orderItemId },
-                navigate: (pageReference) => this[NavigationMixin.Navigate](pageReference)
+                context: { orderId, orderItemId }
             });
 
             this.dispatchEvent(
