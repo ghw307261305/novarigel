@@ -69,4 +69,35 @@ private class NovaRigelReturnsAgentControllerTest {
 
         System.assertEquals(true, exceptionThrown, 'An AuraHandledException should have been thrown');
     }
+
+    private class ThrowingCalloutMock implements HttpCalloutMock {
+        public HttpResponse respond(HttpRequest req) {
+            throw new System.CalloutException(
+                'The callout couldn\'t access the endpoint. You might not have the required permissions, or the named credential "NovaRigel_Agentforce" might not exist.'
+            );
+        }
+    }
+
+    @IsTest
+    static void testLaunchReturnsAgentCalloutException() {
+        Test.setMock(HttpCalloutMock.class, new ThrowingCalloutMock());
+
+        Test.startTest();
+        Boolean exceptionThrown = false;
+        try {
+            NovaRigelReturnsAgentController.launchReturnsAgent(
+                Id.valueOf('001000000000001AAA'),
+                Id.valueOf('801000000000001AAA')
+            );
+        } catch (AuraHandledException e) {
+            exceptionThrown = true;
+            System.assert(
+                e.getMessage().contains('外部サービスの認証情報（NovaRigel_Agentforce）や権限を確認してください。'),
+                'Should surface configuration guidance.'
+            );
+        }
+        Test.stopTest();
+
+        System.assertEquals(true, exceptionThrown, 'An AuraHandledException should have been thrown');
+    }
 }
