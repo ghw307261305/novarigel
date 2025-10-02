@@ -65,11 +65,12 @@ describe('c-purchase-history', () => {
 
         expect(launchReturnsAgentUiMock).toHaveBeenCalledTimes(1);
         const launchArgs = launchReturnsAgentUiMock.mock.calls[0][0];
-        expect(launchArgs.context).toEqual({
-            orderId: '801000000000001AAA',
-            orderItemId: '802000000000001AAA'
+        expect(launchArgs).toEqual({
+            context: {
+                orderId: '801000000000001AAA',
+                orderItemId: '802000000000001AAA'
+            }
         });
-        expect(typeof launchArgs.navigate).toBe('function');
         expect(handler).toHaveBeenCalled();
     });
 });
