@@ -1,5 +1,6 @@
 import { LightningElement, api, wire } from 'lwc';
 import getConfig from '@salesforce/apex/AgentforceChatController.getConfig';
+import sendMessage from '@salesforce/apex/AgentforceChatController.sendMessage';
 
 const ROLE_LABELS = {
     user: 'You',
@@ -107,7 +108,8 @@ export default class AgentforceChat extends LightningElement {
 
         try {
             const response = await this.sendMessageToAgentforce(draft);
-            const agentResponse = this.createMessage('agent', response.message);
+            const agentMessageText = response && response.message ? response.message : 'Agentforce response missing message.';
+            const agentResponse = this.createMessage('agent', agentMessageText);
             this.messages = [...this.messages, agentResponse];
         } catch (error) {
             this.errorMessage = this.normalizeError(error);
@@ -126,30 +128,16 @@ export default class AgentforceChat extends LightningElement {
             throw new Error('Missing Agentforce configuration');
         }
 
-        const payload = {
-            botId,
+        return sendMessage({
             message: content,
             transcript: this.messages.map((message) => ({
                 role: message.role,
                 content: message.content,
                 timestamp: message.timestamp
-            }))
-        };
-
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
+            })),
+            endpointUrl: endpoint,
+            botId
         });
-
-        if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({}));
-            throw new Error(errorBody.message || 'Agentforce request failed');
-        }
-
-        return response.json();
     }
 
     normalizeError(error) {
