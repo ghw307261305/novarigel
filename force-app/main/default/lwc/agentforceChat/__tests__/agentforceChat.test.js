@@ -3,11 +3,20 @@ import AgentforceChat from 'c/agentforceChat';
 import { registerApexTestWireAdapter } from '@salesforce/wire-service-jest-util';
 
 const mockGetConfig = jest.fn();
+const mockSendMessage = jest.fn();
 
 jest.mock(
     '@salesforce/apex/AgentforceChatController.getConfig',
     () => ({
         default: mockGetConfig
+    }),
+    { virtual: true }
+);
+
+jest.mock(
+    '@salesforce/apex/AgentforceChatController.sendMessage',
+    () => ({
+        default: mockSendMessage
     }),
     { virtual: true }
 );
@@ -34,10 +43,7 @@ describe('c-agentforce-chat', () => {
 
         getConfigAdapter.emit({ endpointUrl: 'https://default.example.com', botId: 'default-bot' });
 
-        global.fetch = jest.fn().mockResolvedValue({
-            ok: true,
-            json: () => Promise.resolve({ message: 'Hello from Agentforce' })
-        });
+        mockSendMessage.mockResolvedValue({ message: 'Hello from Agentforce' });
 
         const textarea = element.shadowRoot.querySelector('lightning-textarea');
         textarea.value = 'Hi there';
@@ -48,10 +54,11 @@ describe('c-agentforce-chat', () => {
 
         await flushPromises();
 
-        expect(global.fetch).toHaveBeenCalledWith(
-            'https://example.com/api',
+        expect(mockSendMessage).toHaveBeenCalledWith(
             expect.objectContaining({
-                method: 'POST'
+                message: 'Hi there',
+                endpointUrl: 'https://example.com/api',
+                botId: 'bot-123'
             })
         );
 
@@ -72,9 +79,8 @@ describe('c-agentforce-chat', () => {
 
         getConfigAdapter.emit({ endpointUrl: 'https://default.example.com', botId: 'default-bot' });
 
-        global.fetch = jest.fn().mockResolvedValue({
-            ok: false,
-            json: () => Promise.resolve({ message: 'Agentforce request failed' })
+        mockSendMessage.mockRejectedValue({
+            body: { message: 'Agentforce request failed' }
         });
 
         const textarea = element.shadowRoot.querySelector('lightning-textarea');
