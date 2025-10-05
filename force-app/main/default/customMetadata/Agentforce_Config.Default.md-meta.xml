@@ -8,14 +8,34 @@
     </values>
     <values>
         <field>Endpoint_Url__c</field>
+        <value xsi:type="xsd:string" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">https://example.com/oauth/token</value>
+    </values>
+    <values>
+        <field>Chat_Endpoint_Url__c</field>
         <value xsi:type="xsd:string" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">https://example.com/agentforce</value>
     </values>
     <values>
         <field>Named_Credential__c</field>
-        <value xsi:type="xsd:string" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">Agentforce_Named_Credential</value>
+        <value xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
     </values>
     <values>
         <field>Authorization_Header_Value__c</field>
         <value xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+    </values>
+    <values>
+        <field>Consumer_Key__c</field>
+        <value xsi:type="xsd:string" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">sample-client-key</value>
+    </values>
+    <values>
+        <field>Consumer_Secret__c</field>
+        <value xsi:type="xsd:string" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">sample-client-secret</value>
+    </values>
+    <values>
+        <field>Username__c</field>
+        <value xsi:type="xsd:string" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">agentforce-user@example.com</value>
+    </values>
+    <values>
+        <field>Password__c</field>
+        <value xsi:type="xsd:string" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">sample-password</value>
     </values>
 </CustomMetadata>
