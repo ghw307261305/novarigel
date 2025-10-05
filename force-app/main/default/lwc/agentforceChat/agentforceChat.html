@@ -1,0 +1,45 @@
+<template>
+    <lightning-card title="Agentforce Chat" icon-name="custom:custom14">
+        <div class="status" data-id="status">
+            <lightning-icon if:true={isLoading} icon-name="utility:refresh" alternative-text="Loading" class="spin"></lightning-icon>
+            <lightning-icon if:true={hasError} icon-name="utility:error" alternative-text="Error" class="error"></lightning-icon>
+            <template if:true={statusMessage}>
+                <span class="status-text">{statusMessage}</span>
+            </template>
+        </div>
+        <div class="transcript" data-id="transcript">
+            <template if:true={messages.length}>
+                <template for:each={messages} for:item="message">
+                    <div key={message.id} class={message.cssClass} data-role={message.role}>
+                        <div class="message-metadata">
+                            <span class="role">{message.roleLabel}</span>
+                            <span class="timestamp">{message.formattedTimestamp}</span>
+                        </div>
+                        <div class="message-body">{message.content}</div>
+                    </div>
+                </template>
+            </template>
+            <template if:false={messages.length}>
+                <p class="placeholder">No messages yet. Say hello to start the conversation.</p>
+            </template>
+        </div>
+        <div class="composer" data-id="composer">
+            <lightning-textarea
+                value={draftMessage}
+                onchange={handleDraftChange}
+                placeholder="Type your message..."
+                data-id="composer-input"
+                label="Your message"
+                maxlength="4000"
+            ></lightning-textarea>
+            <lightning-button
+                variant="brand"
+                label="Send"
+                onclick={handleSend}
+                disabled={isSendDisabled}
+                class="composer-send"
+                data-id="composer-send"
+            ></lightning-button>
+        </div>
+    </lightning-card>
+</template>
