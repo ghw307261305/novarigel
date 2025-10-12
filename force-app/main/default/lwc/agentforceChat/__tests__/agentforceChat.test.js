@@ -74,7 +74,11 @@ describe('c-agentforce-chat', () => {
         element.botId = 'bot-123';
         document.body.appendChild(element);
 
-        getConfigAdapter.emit({ endpointUrl: 'https://default.example.com', botId: 'default-bot' });
+        getConfigAdapter.emit({
+            startSessionEndpointUrl: 'https://default.example.com/sessions',
+            messagesEndpointUrl: 'https://default.example.com',
+            botId: 'default-bot'
+        });
 
         mockStartSession.mockResolvedValue({
             sessionId: 'session-123',
@@ -123,7 +127,11 @@ describe('c-agentforce-chat', () => {
         element.botId = 'bot-123';
         document.body.appendChild(element);
 
-        getConfigAdapter.emit({ endpointUrl: 'https://default.example.com', botId: 'default-bot' });
+        getConfigAdapter.emit({
+            startSessionEndpointUrl: 'https://default.example.com/sessions',
+            messagesEndpointUrl: 'https://default.example.com',
+            botId: 'default-bot'
+        });
 
         mockStartSession.mockResolvedValue({
             sessionId: 'session-123',
@@ -149,5 +157,47 @@ describe('c-agentforce-chat', () => {
 
         const agentMessage = element.shadowRoot.querySelector('div[data-role="agent"] .message-body');
         expect(agentMessage.textContent).toBe('Agentforce request failed');
+    });
+
+    it('builds the messages endpoint from configured metadata when the session response omits URLs', async () => {
+        const element = createElement('c-agentforce-chat', {
+            is: AgentforceChat
+        });
+        element.botId = 'bot-123';
+        document.body.appendChild(element);
+
+        getConfigAdapter.emit({
+            startSessionEndpointUrl: 'https://example.com/agentforce/sessions',
+            messagesEndpointUrl: 'https://example.com/agentforce',
+            botId: 'bot-123'
+        });
+
+        mockStartSession.mockResolvedValue({
+            sessionId: 'session-789'
+        });
+        mockSendMessage.mockResolvedValue({ message: 'Reply' });
+
+        const textarea = element.shadowRoot.querySelector('lightning-textarea');
+        textarea.value = 'Hi there';
+        textarea.dispatchEvent(new CustomEvent('change'));
+
+        const button = element.shadowRoot.querySelector('lightning-button');
+        button.click();
+
+        await flushPromises();
+        await flushPromises();
+
+        expect(mockStartSession).toHaveBeenCalledWith(
+            expect.objectContaining({
+                endpointUrl: 'https://example.com/agentforce/sessions'
+            })
+        );
+
+        expect(mockSendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                endpointUrl: 'https://example.com/agentforce/sessions/session-789/messages',
+                sessionId: 'session-789'
+            })
+        );
     });
 });
