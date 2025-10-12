@@ -8,12 +8,13 @@ This Lightning Web Component renders an Agentforce-powered chat experience for E
    - Deploy the `Agentforce_Config__mdt` custom metadata type, default record, Apex controller, and the `agentforceChat` LWC to your org.
 2. **Configure Agentforce connection and authentication**
    - Confirm that the OAuth and chat endpoints you plan to reach are added to Remote Site Settings (or otherwise permitted for callouts).
-   - Update the `Agentforce_Config.Default` custom metadata record with your API settings:
-     - `Chat Endpoint Url` – the REST endpoint that accepts chat messages (for example, `https://example.com/agentforce`). This value is used as the component default and can still be overridden per component instance in Experience Builder.
+    - Update the `Agentforce_Config.Default` custom metadata record with your API settings:
+     - `Start Session Endpoint Url` – the REST endpoint that creates a new chat session (for example, `https://api.salesforce.com/einstein/ai-agent/v1/agents/{0}/sessions`). The `{0}` token is replaced with the configured Agent ID (bot ID) automatically. This value is used as the component default and can still be overridden per component instance in Experience Builder.
+     - `Messages Endpoint Url` – the REST endpoint (or base URL) that receives chat messages once a session exists (for example, `https://api.salesforce.com/einstein/ai-agent/v1/sessions/{0}/messages`). The `{0}` token is replaced with the active session ID automatically before the request is sent.
+     - `Chat Endpoint Url` – retained for backward compatibility. When populated, it is used as a fallback for the start-session and messages endpoints.
      - `Bot Id` – the Agentforce bot identifier to target.
      - `Endpoint Url` – the OAuth token endpoint that issues access tokens (for example, `https://example.com/oauth/token`).
-     - `Consumer Key` and `Consumer Secret` – the client credentials for the OAuth connected app.
-     - `Username` and `Password` – the credentials of the Agentforce integration user. Include any required security token as part of the password value.
+    - `Consumer Key` and `Consumer Secret` – the client credentials for the OAuth connected app used in the client credentials flow.
      - `Authorization Header Value` – optional additional header value to include with the chat request. When populated, the value is sent in an `X-Agentforce-Authorization` header alongside the bearer token.
    - Optionally override the chat endpoint or bot ID per component instance through the Experience Builder property panel.
 3. **Assign permissions**
@@ -24,7 +25,7 @@ This Lightning Web Component renders an Agentforce-powered chat experience for E
 
 ## Runtime behavior
 
-- Messages sent from the composer are posted to the configured Agentforce REST endpoint along with the existing transcript. Before each chat callout, the controller performs the OAuth username-password flow using the stored credentials and passes the resulting bearer token to the chat service.
+- Messages sent from the composer are posted to the configured Agentforce REST endpoint along with the existing transcript. Before each chat callout, the controller performs the OAuth client credentials flow using the stored client ID and secret and passes the resulting bearer token to the chat service.
 - Agent responses are appended to the transcript when the API returns.
 - Errors are surfaced in the status banner and echoed into the transcript for quick diagnosis.
 

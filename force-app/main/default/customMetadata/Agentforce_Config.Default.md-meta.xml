@@ -11,6 +11,14 @@
         <value xsi:type="xsd:string" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">https://example.com/oauth/token</value>
     </values>
     <values>
+        <field>Start_Session_Endpoint_Url__c</field>
+        <value xsi:type="xsd:string" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">https://api.salesforce.com/einstein/ai-agent/v1/agents/{0}/sessions</value>
+    </values>
+    <values>
+        <field>Messages_Endpoint_Url__c</field>
+        <value xsi:type="xsd:string" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">https://api.salesforce.com/einstein/ai-agent/v1/sessions/{0}/messages</value>
+    </values>
+    <values>
         <field>Chat_Endpoint_Url__c</field>
         <value xsi:type="xsd:string" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">https://example.com/agentforce</value>
     </values>
