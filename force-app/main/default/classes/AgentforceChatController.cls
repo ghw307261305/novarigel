@@ -74,9 +74,22 @@ public with sharing class AgentforceChatController {
       passwordValue
     );
 
+    String messagesEndpoint = resolvedEndpoint;
+    if (String.isNotBlank(messagesEndpoint)) {
+      Boolean hasSessionSegment = messagesEndpoint.contains('/sessions/');
+      Boolean endsWithMessages = messagesEndpoint.endsWith('/messages');
+      if (!hasSessionSegment || !endsWithMessages) {
+        messagesEndpoint = buildMessagesUrl(messagesEndpoint, sessionId);
+      }
+    }
+
+    if (String.isBlank(messagesEndpoint)) {
+      throw new AuraHandledException('Missing Agentforce configuration');
+    }
+
     HttpRequest request = new HttpRequest();
     request.setMethod('POST');
-    request.setEndpoint(resolvedEndpoint);
+    request.setEndpoint(messagesEndpoint);
     request.setHeader('Content-Type', 'application/json');
     request.setHeader('Authorization', 'Bearer ' + accessToken);
     if (String.isNotBlank(config.Authorization_Header_Value__c)) {
