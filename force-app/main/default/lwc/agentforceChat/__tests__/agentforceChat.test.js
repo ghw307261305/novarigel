@@ -3,6 +3,7 @@ import AgentforceChat from 'c/agentforceChat';
 import { registerApexTestWireAdapter } from '@salesforce/wire-service-jest-util';
 
 const mockGetConfig = jest.fn();
+const mockStartSession = jest.fn();
 const mockSendMessage = jest.fn();
 
 jest.mock(
@@ -14,9 +15,41 @@ jest.mock(
 );
 
 jest.mock(
+    '@salesforce/apex/AgentforceChatController.startSession',
+    () => ({
+        default: mockStartSession
+    }),
+    { virtual: true }
+);
+
+jest.mock(
     '@salesforce/apex/AgentforceChatController.sendMessage',
     () => ({
         default: mockSendMessage
+    }),
+    { virtual: true }
+);
+
+jest.mock(
+    '@salesforce/user/Id',
+    () => ({
+        default: '005000000000001'
+    }),
+    { virtual: true }
+);
+
+jest.mock(
+    '@salesforce/i18n/locale',
+    () => ({
+        default: 'en_US'
+    }),
+    { virtual: true }
+);
+
+jest.mock(
+    '@salesforce/i18n/timeZone',
+    () => ({
+        default: 'America/Los_Angeles'
     }),
     { virtual: true }
 );
@@ -43,6 +76,11 @@ describe('c-agentforce-chat', () => {
 
         getConfigAdapter.emit({ endpointUrl: 'https://default.example.com', botId: 'default-bot' });
 
+        mockStartSession.mockResolvedValue({
+            sessionId: 'session-123',
+            messagesUrl: 'https://example.com/api/sessions/session-123/messages',
+            externalSessionKey: 'abc'
+        });
         mockSendMessage.mockResolvedValue({ message: 'Hello from Agentforce' });
 
         const textarea = element.shadowRoot.querySelector('lightning-textarea');
@@ -53,12 +91,20 @@ describe('c-agentforce-chat', () => {
         button.click();
 
         await flushPromises();
+        await flushPromises();
+
+        expect(mockStartSession).toHaveBeenCalledWith(
+            expect.objectContaining({
+                endpointUrl: 'https://example.com/api'
+            })
+        );
 
         expect(mockSendMessage).toHaveBeenCalledWith(
             expect.objectContaining({
                 message: 'Hi there',
-                endpointUrl: 'https://example.com/api',
-                botId: 'bot-123'
+                endpointUrl: 'https://example.com/api/sessions/session-123/messages',
+                botId: 'bot-123',
+                sessionId: 'session-123'
             })
         );
 
@@ -79,6 +125,10 @@ describe('c-agentforce-chat', () => {
 
         getConfigAdapter.emit({ endpointUrl: 'https://default.example.com', botId: 'default-bot' });
 
+        mockStartSession.mockResolvedValue({
+            sessionId: 'session-123',
+            messagesUrl: 'https://example.com/api/sessions/session-123/messages'
+        });
         mockSendMessage.mockRejectedValue({
             body: { message: 'Agentforce request failed' }
         });
@@ -90,6 +140,7 @@ describe('c-agentforce-chat', () => {
         const button = element.shadowRoot.querySelector('lightning-button');
         button.click();
 
+        await flushPromises();
         await flushPromises();
 
         const statusText = element.shadowRoot.querySelector('[data-id="status"] .status-text');
