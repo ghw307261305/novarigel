@@ -18,16 +18,35 @@ const STATUS = {
 };
 
 export default class AgentforceChat extends LightningElement {
-    _endpointUrl;
+    _startSessionEndpointUrl;
+    _messagesEndpointUrl;
     _botId;
 
     @api
+    get startSessionEndpointUrl() {
+        return this._startSessionEndpointUrl;
+    }
+
+    set startSessionEndpointUrl(value) {
+        this._startSessionEndpointUrl = value;
+    }
+
+    @api
     get endpointUrl() {
-        return this._endpointUrl;
+        return this.startSessionEndpointUrl;
     }
 
     set endpointUrl(value) {
-        this._endpointUrl = value;
+        this.startSessionEndpointUrl = value;
+    }
+
+    @api
+    get messagesEndpointUrl() {
+        return this._messagesEndpointUrl;
+    }
+
+    set messagesEndpointUrl(value) {
+        this._messagesEndpointUrl = value;
     }
 
     @api
@@ -78,11 +97,7 @@ export default class AgentforceChat extends LightningElement {
     }
 
     get isSendDisabled() {
-        return !this.draftMessage || this.isLoading || !this.resolvedEndpoint;
-    }
-
-    get resolvedEndpoint() {
-        return this.endpointUrl || (this.wiredConfig?.data && this.wiredConfig.data.endpointUrl);
+        return !this.draftMessage || this.isLoading || !this.resolvedStartSessionEndpoint;
     }
 
     get resolvedBotId() {
@@ -97,12 +112,23 @@ export default class AgentforceChat extends LightningElement {
     }
 
     get resolvedStartSessionEndpoint() {
-        return this.resolvedEndpoint;
+        return (
+            this.startSessionEndpointUrl ||
+            (this.wiredConfig?.data &&
+                (this.wiredConfig.data.startSessionEndpointUrl || this.wiredConfig.data.endpointUrl))
+        );
+    }
+
+    get resolvedMessagesEndpointBase() {
+        return this.messagesEndpointUrl || (this.wiredConfig?.data && this.wiredConfig.data.messagesEndpointUrl);
     }
 
     applyConfig(data) {
-        if (!this.endpointUrl) {
-            this._endpointUrl = data.endpointUrl;
+        if (!this.startSessionEndpointUrl) {
+            this._startSessionEndpointUrl = data.startSessionEndpointUrl || data.endpointUrl;
+        }
+        if (!this.messagesEndpointUrl && data.messagesEndpointUrl) {
+            this._messagesEndpointUrl = data.messagesEndpointUrl;
         }
         if (!this.botId) {
             this._botId = data.botId;
@@ -174,7 +200,12 @@ export default class AgentforceChat extends LightningElement {
             return this.sessionInitializationPromise;
         }
 
-        this.sessionInitializationPromise = this.initializeSession();
+        const botId = this.resolvedBotId;
+        if (!botId) {
+            throw new Error('Missing Agentforce configuration');
+        }
+
+        this.sessionInitializationPromise = this.initializeSession(botId);
 
         try {
             await this.sessionInitializationPromise;
@@ -183,14 +214,16 @@ export default class AgentforceChat extends LightningElement {
         }
     }
 
-    async initializeSession() {
-        const endpoint = this.resolvedStartSessionEndpoint;
-        if (!endpoint) {
+    async initializeSession(botId) {
+        let startSessionEndpoint = this.resolvedStartSessionEndpoint;
+        if (!startSessionEndpoint) {
             throw new Error('Missing Agentforce configuration');
         }
 
+        startSessionEndpoint = this.buildStartSessionEndpoint(startSessionEndpoint, botId);
+
         const payload = this.buildStartSessionPayload();
-        const result = await startSession({ endpointUrl: endpoint, payload });
+        const result = await startSession({ endpointUrl: startSessionEndpoint, payload });
 
         const sessionId = this.extractSessionId(result);
         if (!sessionId) {
@@ -199,7 +232,29 @@ export default class AgentforceChat extends LightningElement {
 
         this.sessionId = sessionId;
         this.sessionKey = result?.externalSessionKey || payload.externalSessionKey;
-        this.messagesEndpoint = this.resolveMessagesEndpoint(result, sessionId, endpoint);
+        this.messagesEndpoint = this.resolveMessagesEndpoint(result, sessionId, startSessionEndpoint);
+    }
+
+    buildStartSessionEndpoint(template, botId) {
+        if (!template) {
+            return template;
+        }
+
+        if (template.includes('{0}')) {
+            if (!botId) {
+                throw new Error('Missing Agentforce configuration');
+            }
+            return template.replace('{0}', encodeURIComponent(botId));
+        }
+
+        if (template.includes('{botId}')) {
+            if (!botId) {
+                throw new Error('Missing Agentforce configuration');
+            }
+            return template.replace('{botId}', encodeURIComponent(botId));
+        }
+
+        return template;
     }
 
     buildStartSessionPayload() {
@@ -285,12 +340,22 @@ export default class AgentforceChat extends LightningElement {
             }
         }
 
-        return this.buildMessagesEndpointFromBase(startEndpoint, sessionId);
+        const configuredBase = this.resolvedMessagesEndpointBase;
+        const fallbackBase = configuredBase || startEndpoint;
+        return this.buildMessagesEndpointFromBase(fallbackBase, sessionId);
     }
 
     buildMessagesEndpointFromBase(baseEndpoint, sessionId) {
         if (!baseEndpoint || !sessionId) {
             return undefined;
+        }
+
+        if (baseEndpoint.includes('{0}')) {
+            return baseEndpoint.replace('{0}', encodeURIComponent(sessionId));
+        }
+
+        if (baseEndpoint.includes('{sessionId}')) {
+            return baseEndpoint.replace('{sessionId}', encodeURIComponent(sessionId));
         }
 
         let normalized = baseEndpoint.replace(/\/+$/, '');

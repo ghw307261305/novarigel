@@ -74,7 +74,11 @@ describe('c-agentforce-chat', () => {
         element.botId = 'bot-123';
         document.body.appendChild(element);
 
-        getConfigAdapter.emit({ endpointUrl: 'https://default.example.com', botId: 'default-bot' });
+        getConfigAdapter.emit({
+            startSessionEndpointUrl: 'https://default.example.com/sessions',
+            messagesEndpointUrl: 'https://default.example.com',
+            botId: 'default-bot'
+        });
 
         mockStartSession.mockResolvedValue({
             sessionId: 'session-123',
@@ -123,7 +127,11 @@ describe('c-agentforce-chat', () => {
         element.botId = 'bot-123';
         document.body.appendChild(element);
 
-        getConfigAdapter.emit({ endpointUrl: 'https://default.example.com', botId: 'default-bot' });
+        getConfigAdapter.emit({
+            startSessionEndpointUrl: 'https://default.example.com/sessions',
+            messagesEndpointUrl: 'https://default.example.com',
+            botId: 'default-bot'
+        });
 
         mockStartSession.mockResolvedValue({
             sessionId: 'session-123',
@@ -149,5 +157,96 @@ describe('c-agentforce-chat', () => {
 
         const agentMessage = element.shadowRoot.querySelector('div[data-role="agent"] .message-body');
         expect(agentMessage.textContent).toBe('Agentforce request failed');
+    });
+
+    it('builds the messages endpoint from configured metadata when the session response omits URLs', async () => {
+        const element = createElement('c-agentforce-chat', {
+            is: AgentforceChat
+        });
+        element.botId = 'bot-123';
+        document.body.appendChild(element);
+
+        getConfigAdapter.emit({
+            startSessionEndpointUrl:
+                'https://api.salesforce.com/einstein/ai-agent/v1/agents/{0}/sessions',
+            messagesEndpointUrl:
+                'https://api.salesforce.com/einstein/ai-agent/v1/sessions/{0}/messages',
+            botId: 'bot-123'
+        });
+
+        mockStartSession.mockResolvedValue({
+            sessionId: 'session-789'
+        });
+        mockSendMessage.mockResolvedValue({ message: 'Reply' });
+
+        const textarea = element.shadowRoot.querySelector('lightning-textarea');
+        textarea.value = 'Hi there';
+        textarea.dispatchEvent(new CustomEvent('change'));
+
+        const button = element.shadowRoot.querySelector('lightning-button');
+        button.click();
+
+        await flushPromises();
+        await flushPromises();
+
+        expect(mockStartSession).toHaveBeenCalledWith(
+            expect.objectContaining({
+                endpointUrl:
+                    'https://api.salesforce.com/einstein/ai-agent/v1/agents/bot-123/sessions'
+            })
+        );
+
+        expect(mockSendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                endpointUrl:
+                    'https://api.salesforce.com/einstein/ai-agent/v1/sessions/session-789/messages',
+                sessionId: 'session-789'
+            })
+        );
+    });
+
+    it('applies placeholder substitution when the component overrides the start session endpoint', async () => {
+        const element = createElement('c-agentforce-chat', {
+            is: AgentforceChat
+        });
+        element.startSessionEndpointUrl =
+            'https://example.com/agents/{0}/sessions';
+        element.messagesEndpointUrl =
+            'https://example.com/sessions/{0}/messages';
+        element.botId = 'override-bot';
+        document.body.appendChild(element);
+
+        getConfigAdapter.emit({
+            startSessionEndpointUrl: null,
+            messagesEndpointUrl: null,
+            botId: 'ignored-bot'
+        });
+
+        mockStartSession.mockResolvedValue({
+            sessionId: 'session-456'
+        });
+        mockSendMessage.mockResolvedValue({ message: 'Reply' });
+
+        const textarea = element.shadowRoot.querySelector('lightning-textarea');
+        textarea.value = 'Hi there';
+        textarea.dispatchEvent(new CustomEvent('change'));
+
+        const button = element.shadowRoot.querySelector('lightning-button');
+        button.click();
+
+        await flushPromises();
+        await flushPromises();
+
+        expect(mockStartSession).toHaveBeenCalledWith(
+            expect.objectContaining({
+                endpointUrl: 'https://example.com/agents/override-bot/sessions'
+            })
+        );
+        expect(mockSendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                endpointUrl: 'https://example.com/sessions/session-456/messages',
+                sessionId: 'session-456'
+            })
+        );
     });
 });

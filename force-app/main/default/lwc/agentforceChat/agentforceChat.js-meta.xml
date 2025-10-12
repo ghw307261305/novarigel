@@ -12,7 +12,8 @@
     </targets>
     <targetConfigs>
         <targetConfig targets="lightning__AppPage,lightning__RecordPage,lightning__HomePage,lightningCommunity__Page,lightningCommunity__Default">
-            <property name="endpointUrl" type="String" label="Agentforce Endpoint URL" description="REST endpoint that will receive chat messages." />
+            <property name="endpointUrl" type="String" label="Start Session Endpoint URL" description="REST endpoint used to start a new Agentforce chat session." />
+            <property name="messagesEndpointUrl" type="String" label="Messages Endpoint URL" description="REST endpoint (or base URL) used to post chat messages after a session is created. When omitted, the component derives this value from the start session endpoint." />
             <property name="botId" type="String" label="Bot ID" description="Identifier for the Agentforce bot to contact." />
         </targetConfig>
     </targetConfigs>
