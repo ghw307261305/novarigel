@@ -68,15 +68,10 @@ public with sharing class AgentforceChatController {
     String tokenEndpoint = config.Endpoint_Url__c;
     String consumerKey = config.Consumer_Key__c;
     String consumerSecret = config.Consumer_Secret__c;
-    String usernameValue = config.Username__c;
-    String passwordValue = config.Password__c;
-
     if (
       String.isBlank(tokenEndpoint) ||
       String.isBlank(consumerKey) ||
-      String.isBlank(consumerSecret) ||
-      String.isBlank(usernameValue) ||
-      String.isBlank(passwordValue)
+      String.isBlank(consumerSecret)
     ) {
       throw new AuraHandledException('Missing Agentforce OAuth configuration');
     }
@@ -84,9 +79,7 @@ public with sharing class AgentforceChatController {
     String accessToken = requestAccessToken(
       tokenEndpoint,
       consumerKey,
-      consumerSecret,
-      usernameValue,
-      passwordValue
+      consumerSecret
     );
 
     String messagesEndpoint = resolvedEndpoint;
@@ -179,15 +172,10 @@ public with sharing class AgentforceChatController {
     String tokenEndpoint = config.Endpoint_Url__c;
     String consumerKey = config.Consumer_Key__c;
     String consumerSecret = config.Consumer_Secret__c;
-    String usernameValue = config.Username__c;
-    String passwordValue = config.Password__c;
-
     if (
       String.isBlank(tokenEndpoint) ||
       String.isBlank(consumerKey) ||
-      String.isBlank(consumerSecret) ||
-      String.isBlank(usernameValue) ||
-      String.isBlank(passwordValue)
+      String.isBlank(consumerSecret)
     ) {
       throw new AuraHandledException('Missing Agentforce OAuth configuration');
     }
@@ -195,9 +183,7 @@ public with sharing class AgentforceChatController {
     String accessToken = requestAccessToken(
       tokenEndpoint,
       consumerKey,
-      consumerSecret,
-      usernameValue,
-      passwordValue
+      consumerSecret
     );
 
     HttpRequest request = new HttpRequest();
@@ -297,9 +283,7 @@ public with sharing class AgentforceChatController {
   private static String requestAccessToken(
     String tokenEndpoint,
     String consumerKey,
-    String consumerSecret,
-    String usernameValue,
-    String passwordValue
+    String consumerSecret
   ) {
     HttpRequest tokenRequest = new HttpRequest();
     tokenRequest.setMethod('POST');
@@ -308,11 +292,9 @@ public with sharing class AgentforceChatController {
 
     String requestBody = String.join(
       new List<String>{
-        'grant_type=password',
-        'client_id=' + EncodingUtil.urlEncode(consumerKey, 'UTF-8'),
-        'client_secret=' + EncodingUtil.urlEncode(consumerSecret, 'UTF-8'),
-        'username=' + EncodingUtil.urlEncode(usernameValue, 'UTF-8'),
-        'password=' + EncodingUtil.urlEncode(passwordValue, 'UTF-8')
+        'grant_type=client_credentials',
+        'client_id=' + consumerKey,
+        'client_secret=' + consumerSecret
       },
       '&'
     );
