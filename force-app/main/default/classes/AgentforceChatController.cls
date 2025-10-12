@@ -82,7 +82,7 @@ public with sharing class AgentforceChatController {
       consumerSecret
     );
 
-    String messagesEndpoint = resolvedEndpoint;
+    String messagesEndpoint = applySessionPlaceholder(resolvedEndpoint, sessionId);
     if (String.isNotBlank(messagesEndpoint)) {
       Boolean hasSessionSegment = messagesEndpoint.contains('/sessions/');
       Boolean endsWithMessages = messagesEndpoint.endsWith('/messages');
@@ -168,6 +168,11 @@ public with sharing class AgentforceChatController {
     if (String.isBlank(resolvedEndpoint)) {
       throw new AuraHandledException('Missing Agentforce configuration');
     }
+
+    resolvedEndpoint = applyAgentPlaceholder(
+      resolvedEndpoint,
+      config != null ? config.Bot_Id__c : null
+    );
 
     String tokenEndpoint = config.Endpoint_Url__c;
     String consumerKey = config.Consumer_Key__c;
@@ -515,6 +520,11 @@ public with sharing class AgentforceChatController {
       return null;
     }
 
+    String resolvedTemplate = applySessionPlaceholder(baseUrl, sessionId);
+    if (resolvedTemplate != null && resolvedTemplate != baseUrl) {
+      return resolvedTemplate;
+    }
+
     String normalizedBase = baseUrl;
     while (normalizedBase.endsWith('/')) {
       normalizedBase = normalizedBase.substring(0, normalizedBase.length() - 1);
@@ -557,6 +567,59 @@ public with sharing class AgentforceChatController {
       Blob.valueOf(String.valueOf(Crypto.getRandomLong()))
     );
     return EncodingUtil.convertToHex(randomBlob);
+  }
+
+  private static String applyAgentPlaceholder(String template, String botId) {
+    if (String.isBlank(template)) {
+      return template;
+    }
+
+    Boolean containsPlaceholder =
+      template.contains('{0}') || template.contains('{botId}');
+    if (!containsPlaceholder) {
+      return template;
+    }
+
+    if (String.isBlank(botId)) {
+      throw new AuraHandledException('Missing Agentforce bot configuration');
+    }
+
+    String encoded = EncodingUtil.urlEncode(botId, 'UTF-8');
+    if (template.contains('{0}')) {
+      template = template.replace('{0}', encoded);
+    }
+    if (template.contains('{botId}')) {
+      template = template.replace('{botId}', encoded);
+    }
+    return template;
+  }
+
+  private static String applySessionPlaceholder(
+    String template,
+    String sessionId
+  ) {
+    if (String.isBlank(template)) {
+      return template;
+    }
+
+    Boolean containsPlaceholder =
+      template.contains('{0}') || template.contains('{sessionId}');
+    if (!containsPlaceholder) {
+      return template;
+    }
+
+    if (String.isBlank(sessionId)) {
+      throw new AuraHandledException('Missing Agentforce session');
+    }
+
+    String encoded = EncodingUtil.urlEncode(sessionId, 'UTF-8');
+    if (template.contains('{0}')) {
+      template = template.replace('{0}', encoded);
+    }
+    if (template.contains('{sessionId}')) {
+      template = template.replace('{sessionId}', encoded);
+    }
+    return template;
   }
 
   public class AgentforceChatConfig {
