@@ -9,7 +9,9 @@ This Lightning Web Component renders an Agentforce-powered chat experience for E
 2. **Configure Agentforce connection and authentication**
    - Confirm that the OAuth and chat endpoints you plan to reach are added to Remote Site Settings (or otherwise permitted for callouts).
    - Update the `Agentforce_Config.Default` custom metadata record with your API settings:
-     - `Chat Endpoint Url` – the REST endpoint that accepts chat messages (for example, `https://example.com/agentforce`). This value is used as the component default and can still be overridden per component instance in Experience Builder.
+     - `Start Session Endpoint Url` – the REST endpoint that creates a new chat session (for example, `https://example.com/agentforce/sessions`). This value is used as the component default and can still be overridden per component instance in Experience Builder.
+     - `Messages Endpoint Url` – the REST endpoint (or base URL) that receives chat messages once a session exists. When the endpoint contains `{sessionId}`, the token is replaced automatically before the request is sent.
+     - `Chat Endpoint Url` – retained for backward compatibility. When populated, it is used as a fallback for the start-session and messages endpoints.
      - `Bot Id` – the Agentforce bot identifier to target.
      - `Endpoint Url` – the OAuth token endpoint that issues access tokens (for example, `https://example.com/oauth/token`).
      - `Consumer Key` and `Consumer Secret` – the client credentials for the OAuth connected app.
