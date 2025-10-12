@@ -5,10 +5,21 @@ public with sharing class AgentforceChatController {
       'Default'
     );
     if (config == null) {
-      return new AgentforceChatConfig('', '', '', '', '', '', '', '');
+      return new AgentforceChatConfig('', '', '', '', '', '', '', '', '');
     }
+    String startSessionEndpoint = config.Start_Session_Endpoint_Url__c;
+    if (String.isBlank(startSessionEndpoint)) {
+      startSessionEndpoint = config.Chat_Endpoint_Url__c;
+    }
+
+    String messagesEndpoint = config.Messages_Endpoint_Url__c;
+    if (String.isBlank(messagesEndpoint)) {
+      messagesEndpoint = config.Chat_Endpoint_Url__c;
+    }
+
     return new AgentforceChatConfig(
-      config.Chat_Endpoint_Url__c,
+      startSessionEndpoint,
+      messagesEndpoint,
       config.Bot_Id__c,
       config.Authorization_Header_Value__c,
       config.Endpoint_Url__c,
@@ -31,9 +42,13 @@ public with sharing class AgentforceChatController {
       'Default'
     );
 
+    String configuredMessagesEndpoint = config != null
+      ? preferString(config.Messages_Endpoint_Url__c, config.Chat_Endpoint_Url__c)
+      : null;
+
     String resolvedEndpoint = String.isNotBlank(endpointUrl)
       ? endpointUrl
-      : (config != null ? config.Chat_Endpoint_Url__c : null);
+      : configuredMessagesEndpoint;
     String resolvedBotId = String.isNotBlank(botId)
       ? botId
       : (config != null ? config.Bot_Id__c : null);
@@ -53,15 +68,10 @@ public with sharing class AgentforceChatController {
     String tokenEndpoint = config.Endpoint_Url__c;
     String consumerKey = config.Consumer_Key__c;
     String consumerSecret = config.Consumer_Secret__c;
-    String usernameValue = config.Username__c;
-    String passwordValue = config.Password__c;
-
     if (
       String.isBlank(tokenEndpoint) ||
       String.isBlank(consumerKey) ||
-      String.isBlank(consumerSecret) ||
-      String.isBlank(usernameValue) ||
-      String.isBlank(passwordValue)
+      String.isBlank(consumerSecret)
     ) {
       throw new AuraHandledException('Missing Agentforce OAuth configuration');
     }
@@ -69,9 +79,7 @@ public with sharing class AgentforceChatController {
     String accessToken = requestAccessToken(
       tokenEndpoint,
       consumerKey,
-      consumerSecret,
-      usernameValue,
-      passwordValue
+      consumerSecret
     );
 
     String messagesEndpoint = resolvedEndpoint;
@@ -145,9 +153,13 @@ public with sharing class AgentforceChatController {
       'Default'
     );
 
+    String configuredStartSessionEndpoint = config != null
+      ? preferString(config.Start_Session_Endpoint_Url__c, config.Chat_Endpoint_Url__c)
+      : null;
+
     String resolvedEndpoint = String.isNotBlank(endpointUrl)
       ? endpointUrl
-      : (config != null ? config.Chat_Endpoint_Url__c : null);
+      : configuredStartSessionEndpoint;
 
     if (config == null) {
       throw new AuraHandledException('Missing Agentforce configuration');
@@ -160,15 +172,10 @@ public with sharing class AgentforceChatController {
     String tokenEndpoint = config.Endpoint_Url__c;
     String consumerKey = config.Consumer_Key__c;
     String consumerSecret = config.Consumer_Secret__c;
-    String usernameValue = config.Username__c;
-    String passwordValue = config.Password__c;
-
     if (
       String.isBlank(tokenEndpoint) ||
       String.isBlank(consumerKey) ||
-      String.isBlank(consumerSecret) ||
-      String.isBlank(usernameValue) ||
-      String.isBlank(passwordValue)
+      String.isBlank(consumerSecret)
     ) {
       throw new AuraHandledException('Missing Agentforce OAuth configuration');
     }
@@ -176,9 +183,7 @@ public with sharing class AgentforceChatController {
     String accessToken = requestAccessToken(
       tokenEndpoint,
       consumerKey,
-      consumerSecret,
-      usernameValue,
-      passwordValue
+      consumerSecret
     );
 
     HttpRequest request = new HttpRequest();
@@ -278,9 +283,7 @@ public with sharing class AgentforceChatController {
   private static String requestAccessToken(
     String tokenEndpoint,
     String consumerKey,
-    String consumerSecret,
-    String usernameValue,
-    String passwordValue
+    String consumerSecret
   ) {
     HttpRequest tokenRequest = new HttpRequest();
     tokenRequest.setMethod('POST');
@@ -289,11 +292,9 @@ public with sharing class AgentforceChatController {
 
     String requestBody = String.join(
       new List<String>{
-        'grant_type=password',
-        'client_id=' + EncodingUtil.urlEncode(consumerKey, 'UTF-8'),
-        'client_secret=' + EncodingUtil.urlEncode(consumerSecret, 'UTF-8'),
-        'username=' + EncodingUtil.urlEncode(usernameValue, 'UTF-8'),
-        'password=' + EncodingUtil.urlEncode(passwordValue, 'UTF-8')
+        'grant_type=client_credentials',
+        'client_id=' + consumerKey,
+        'client_secret=' + consumerSecret
       },
       '&'
     );
@@ -563,6 +564,12 @@ public with sharing class AgentforceChatController {
     public String endpointUrl { get; set; }
 
     @AuraEnabled
+    public String startSessionEndpointUrl { get; set; }
+
+    @AuraEnabled
+    public String messagesEndpointUrl { get; set; }
+
+    @AuraEnabled
     public String botId { get; set; }
 
     @AuraEnabled
@@ -584,7 +591,8 @@ public with sharing class AgentforceChatController {
     public String password { get; set; }
 
     public AgentforceChatConfig(
-      String endpointUrl,
+      String startSessionEndpointUrl,
+      String messagesEndpointUrl,
       String botId,
       String authorizationHeaderValue,
       String tokenEndpointUrl,
@@ -593,7 +601,9 @@ public with sharing class AgentforceChatController {
       String username,
       String password
     ) {
-      this.endpointUrl = endpointUrl;
+      this.startSessionEndpointUrl = startSessionEndpointUrl;
+      this.endpointUrl = startSessionEndpointUrl;
+      this.messagesEndpointUrl = messagesEndpointUrl;
       this.botId = botId;
       this.authorizationHeaderValue = authorizationHeaderValue;
       this.tokenEndpointUrl = tokenEndpointUrl;
