@@ -16,73 +16,25 @@
     box-shadow: 0 20px 45px rgba(12, 44, 132, 0.25);
 }
 
-.chat-window__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 1.25rem 1.5rem;
-    background: linear-gradient(135deg, #1f7bf2 0%, #0b5cab 100%);
-    color: #ffffff;
-}
-
-.chat-window__brand {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.chat-window__avatar {
-    display: inline-flex;
-    width: 2.75rem;
-    height: 2.75rem;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    box-shadow: 0 8px 18px rgba(5, 24, 77, 0.25);
-}
-
-.chat-window__avatar-icon {
-    --sds-c-icon-color-foreground-default: #ffffff;
-}
-
-.chat-window__titles {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.chat-window__eyebrow {
-    margin: 0;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    opacity: 0.85;
-}
-
-.chat-window__title {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 700;
-    line-height: 1.4;
-}
-
 .status {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     flex-shrink: 0;
     font-size: 0.75rem;
-    background: rgba(12, 62, 139, 0.35);
+    background: #ecf2ff;
     border-radius: 999px;
     padding: 0.35rem 0.75rem;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+    box-shadow: inset 0 0 0 1px rgba(31, 123, 242, 0.25);
+}
+
+.status lightning-icon {
+    --sds-c-icon-color-foreground-default: #0b5cab;
 }
 
 .status-text {
     font-weight: 600;
-    color: #ffffff;
+    color: #0b5cab;
 }
 
 .chat-window__body {
@@ -90,8 +42,13 @@
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
-    padding: 1.25rem 1.5rem 1.5rem;
-    background: linear-gradient(180deg, #eef3ff 0%, #ffffff 100%);
+    padding: 1.5rem;
+    gap: 1rem;
+    background: #f4f7ff;
+}
+
+.chat-window__status {
+    align-self: flex-end;
 }
 
 .transcript {

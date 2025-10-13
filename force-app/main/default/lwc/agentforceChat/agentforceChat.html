@@ -1,21 +1,7 @@
 <template>
     <section class="chat-window">
-        <header class="chat-window__header">
-            <div class="chat-window__brand">
-                <span class="chat-window__avatar" aria-hidden="true">
-                    <lightning-icon
-                        icon-name="utility:bot"
-                        alternative-text="Agentforce bot"
-                        size="small"
-                        class="chat-window__avatar-icon"
-                    ></lightning-icon>
-                </span>
-                <div class="chat-window__titles">
-                    <p class="chat-window__eyebrow">リゲルソフト サポート</p>
-                    <h2 class="chat-window__title">リゲルソフトの生成AIロボットが回答中！</h2>
-                </div>
-            </div>
-            <div class="status" data-id="status">
+        <div class="chat-window__body">
+            <div class="chat-window__status status" data-id="status">
                 <lightning-icon if:true={isLoading} icon-name="utility:refresh" alternative-text="Loading" class="spin"></lightning-icon>
                 <lightning-icon if:true={hasError} icon-name="utility:error" alternative-text="Error" class="error"></lightning-icon>
                 <template if:true={statusMessage}>
