@@ -1,7 +1,7 @@
 import { LightningElement, api, wire } from 'lwc';
 import getConfig from '@salesforce/apex/AgentforceChatController.getConfig';
 import startSession from '@salesforce/apex/AgentforceChatController.startSession';
-import sendMessage from '@salesforce/apex/AgentforceChatController.sendMessage';
+import sendAgentforceMessage from '@salesforce/apex/AgentforceChatController.sendMessage';
 import USER_ID from '@salesforce/user/Id';
 import USER_LOCALE from '@salesforce/i18n/locale';
 import USER_TIMEZONE from '@salesforce/i18n/timeZone';
@@ -140,36 +140,67 @@ export default class AgentforceChat extends LightningElement {
     }
 
     async handleSend() {
-        if (!this.draftMessage) {
+        const draft = this.draftMessage;
+        this.draftMessage = '';
+        await this.sendMessage(draft);
+    }
+
+    @api
+    async sendMessage(content) {
+        const normalizedContent = this.normalizeMessageContent(content);
+        if (!normalizedContent) {
             return;
         }
 
-        const userMessage = this.createMessage('user', this.draftMessage);
-        this.messages = [...this.messages, userMessage];
-        const draft = this.draftMessage;
-        this.draftMessage = '';
-        this.errorMessage = undefined;
-        this.isLoading = true;
+        this.appendUserMessage(normalizedContent);
 
         try {
-            const response = await this.sendMessageToAgentforce(draft);
-            const agentResponses = this.buildAgentResponses(response);
-            if (agentResponses.length === 0) {
-                const fallback = this.createMessage(
-                    'agent',
-                    'Agentforce response missing message.'
-                );
-                this.messages = [...this.messages, fallback];
-            } else {
-                this.messages = [...this.messages, ...agentResponses];
-            }
+            const response = await this.performAgentforceSend(normalizedContent);
+            this.appendAgentResponses(response);
         } catch (error) {
-            this.errorMessage = this.normalizeError(error);
-            const errorMessage = this.createMessage('agent', this.errorMessage, 'error');
-            this.messages = [...this.messages, errorMessage];
+            this.handleAgentforceError(error);
         } finally {
             this.isLoading = false;
         }
+    }
+
+    normalizeMessageContent(content) {
+        if (content === null || content === undefined) {
+            return '';
+        }
+
+        const value = String(content).trim();
+        return value;
+    }
+
+    appendUserMessage(content) {
+        const userMessage = this.createMessage('user', content);
+        this.messages = [...this.messages, userMessage];
+        this.errorMessage = undefined;
+        this.isLoading = true;
+    }
+
+    async performAgentforceSend(content) {
+        return this.sendMessageToAgentforce(content);
+    }
+
+    appendAgentResponses(response) {
+        const agentResponses = this.buildAgentResponses(response);
+        if (agentResponses.length === 0) {
+            const fallback = this.createMessage(
+                'agent',
+                'Agentforce response missing message.'
+            );
+            this.messages = [...this.messages, fallback];
+        } else {
+            this.messages = [...this.messages, ...agentResponses];
+        }
+    }
+
+    handleAgentforceError(error) {
+        this.errorMessage = this.normalizeError(error);
+        const errorMessage = this.createMessage('agent', this.errorMessage, 'error');
+        this.messages = [...this.messages, errorMessage];
     }
 
     async sendMessageToAgentforce(content) {
@@ -185,7 +216,7 @@ export default class AgentforceChat extends LightningElement {
             throw new Error('Missing Agentforce session endpoint');
         }
 
-        return sendMessage({
+        return sendAgentforceMessage({
             message: content,
             transcript: this.messages.map((message) => ({
                 role: message.role,

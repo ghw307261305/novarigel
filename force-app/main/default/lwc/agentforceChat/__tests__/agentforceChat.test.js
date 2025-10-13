@@ -270,4 +270,49 @@ describe('c-agentforce-chat', () => {
             })
         );
     });
+
+    it('allows programmatic sends through the public sendMessage API', async () => {
+        const element = createElement('c-agentforce-chat', {
+            is: AgentforceChat
+        });
+        element.endpointUrl = 'https://example.com/api';
+        element.botId = 'bot-456';
+        document.body.appendChild(element);
+
+        getConfigAdapter.emit({
+            startSessionEndpointUrl: 'https://default.example.com/sessions',
+            messagesEndpointUrl: 'https://default.example.com',
+            botId: 'default-bot'
+        });
+
+        mockStartSession.mockResolvedValue({
+            sessionId: 'session-999',
+            messagesUrl: 'https://example.com/api/sessions/session-999/messages'
+        });
+
+        mockSendMessage.mockResolvedValue({
+            messages: [
+                {
+                    type: 'Inform',
+                    message: 'Acknowledged'
+                }
+            ]
+        });
+
+        await flushPromises();
+
+        await element.sendMessage('Order 42');
+
+        expect(mockStartSession).toHaveBeenCalledTimes(1);
+        expect(mockSendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                message: 'Order 42',
+                sessionId: 'session-999',
+                endpointUrl: 'https://example.com/api/sessions/session-999/messages'
+            })
+        );
+
+        const agentMessage = element.shadowRoot.querySelector('div[data-role="agent"] .message-body');
+        expect(agentMessage.textContent).toBe('Acknowledged');
+    });
 });
