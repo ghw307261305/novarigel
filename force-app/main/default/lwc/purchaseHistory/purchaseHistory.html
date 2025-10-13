@@ -114,4 +114,25 @@
             </template>
         </div>
     </lightning-card>
+    <section
+        class={agentforceChatContainerClass}
+        role="dialog"
+        aria-label="返品・交換サポートチャット"
+        aria-hidden={agentforceChatAriaHidden}
+    >
+        <header class="agentforce-chat__header">
+            <h2 class="agentforce-chat__title">返品・交換サポート</h2>
+            <button
+                type="button"
+                class="agentforce-chat__close"
+                onclick={handleAgentforceChatClose}
+                aria-label="返品・交換サポートを閉じる"
+            >
+                ×
+            </button>
+        </header>
+        <div class="agentforce-chat__body">
+            <c-agentforce-chat></c-agentforce-chat>
+        </div>
+    </section>
 </template>

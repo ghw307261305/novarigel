@@ -2,6 +2,24 @@ import { createElement } from 'lwc';
 import { ShowToastEventName } from 'lightning/platformShowToastEvent';
 import PurchaseHistory from 'c/purchaseHistory';
 
+const sendAgentforceMessageMock = jest.fn().mockResolvedValue();
+
+jest.mock(
+    'c/agentforceChat',
+    () => {
+        const { LightningElement, api } = require('lwc');
+        return {
+            default: class AgentforceChatStub extends LightningElement {
+                @api
+                async sendMessage(message) {
+                    return sendAgentforceMessageMock(message);
+                }
+            }
+        };
+    },
+    { virtual: true }
+);
+
 jest.mock(
     '@salesforce/apex/PurchaseHistoryController.getPurchaseHistory',
     () => ({
@@ -26,6 +44,7 @@ describe('c-purchase-history', () => {
             document.body.removeChild(document.body.firstChild);
         }
         jest.clearAllMocks();
+        sendAgentforceMessageMock.mockClear();
     });
 
     it('launches the returns agent workspace when the button is clicked', async () => {
@@ -62,6 +81,7 @@ describe('c-purchase-history', () => {
         button.click();
 
         await Promise.resolve();
+        await Promise.resolve();
 
         expect(launchReturnsAgentUiMock).toHaveBeenCalledTimes(1);
         const launchArgs = launchReturnsAgentUiMock.mock.calls[0][0];
@@ -72,6 +92,10 @@ describe('c-purchase-history', () => {
             }
         });
         expect(handler).toHaveBeenCalled();
+        expect(sendAgentforceMessageMock).toHaveBeenCalledWith('00012345');
+
+        const container = element.shadowRoot.querySelector('.agentforce-chat-container');
+        expect(container.classList.contains('agentforce-chat-container--visible')).toBe(true);
     });
 
     it('shows an error toast when order context is missing', async () => {

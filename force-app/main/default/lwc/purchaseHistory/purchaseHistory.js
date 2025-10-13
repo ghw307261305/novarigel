@@ -9,6 +9,7 @@ export default class PurchaseHistory extends LightningElement {
     error;
     isLoading = false;
     isLaunchingAgent = false;
+    isAgentforceChatVisible = false;
 
     connectedCallback() {
         this.loadPurchaseHistory();
@@ -16,6 +17,16 @@ export default class PurchaseHistory extends LightningElement {
 
     get hasData() {
         return this.orders && this.orders.length > 0;
+    }
+
+    get agentforceChatContainerClass() {
+        return `agentforce-chat-container${
+            this.isAgentforceChatVisible ? ' agentforce-chat-container--visible' : ''
+        }`;
+    }
+
+    get agentforceChatAriaHidden() {
+        return this.isAgentforceChatVisible ? 'false' : 'true';
     }
 
     get errorMessage() {
@@ -78,6 +89,8 @@ export default class PurchaseHistory extends LightningElement {
 
         this.isLaunchingAgent = true;
 
+        this.openAgentforceChat(orderNumber);
+
         try {
             await launchReturnsAgentUi({
                 context: { orderId, orderItemId }
@@ -101,6 +114,28 @@ export default class PurchaseHistory extends LightningElement {
         } finally {
             this.isLaunchingAgent = false;
         }
+    }
+
+    async openAgentforceChat(orderNumber) {
+        this.isAgentforceChatVisible = true;
+
+        if (!orderNumber) {
+            return;
+        }
+
+        try {
+            const chat = this.template.querySelector('c-agentforce-chat');
+            if (chat && typeof chat.sendMessage === 'function') {
+                await chat.sendMessage(orderNumber);
+            }
+        } catch (error) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to send message to Agentforce chat', error);
+        }
+    }
+
+    handleAgentforceChatClose() {
+        this.isAgentforceChatVisible = false;
     }
 
     groupHistoryByOrder(historyItems) {
