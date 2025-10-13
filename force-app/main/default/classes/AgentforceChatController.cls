@@ -138,10 +138,7 @@ public with sharing class AgentforceChatController {
       if (String.isBlank(response.getBody())) {
         return new AgentforceChatResponse();
       }
-      return (AgentforceChatResponse) JSON.deserialize(
-        response.getBody(),
-        AgentforceChatResponse.class
-      );
+      return parseAgentforceResponse(response.getBody());
     }
 
     String errorMessage = extractErrorMessage(response.getBody());
@@ -149,6 +146,58 @@ public with sharing class AgentforceChatController {
       errorMessage = 'Agentforce request failed';
     }
     throw new AuraHandledException(errorMessage);
+  }
+
+  private static AgentforceChatResponse parseAgentforceResponse(
+    String responseBody
+  ) {
+    AgentforceChatResponse result = new AgentforceChatResponse();
+    result.rawBody = responseBody;
+
+    if (String.isBlank(responseBody)) {
+      return result;
+    }
+
+    Object deserialized = JSON.deserializeUntyped(responseBody);
+    if (!(deserialized instanceof Map<String, Object>)) {
+      return result;
+    }
+
+    Map<String, Object> responseMap = (Map<String, Object>) deserialized;
+
+    Object messagesValue = responseMap.get('messages');
+    if (messagesValue instanceof List<Object>) {
+      for (Object messageEntry : (List<Object>) messagesValue) {
+        if (messageEntry instanceof Map<String, Object>) {
+          Map<String, Object> messageMap = (Map<String, Object>) messageEntry;
+          AgentforceChatMessage message = new AgentforceChatMessage();
+          message.type = (String) messageMap.get('type');
+          message.feedbackId = (String) messageMap.get('feedbackId');
+          if (messageMap.containsKey('isContentSafe')) {
+            message.isContentSafe = (Boolean) messageMap.get('isContentSafe');
+          }
+          message.message = (String) messageMap.get('message');
+          message.id = (String) messageMap.get('id');
+          message.planId = (String) messageMap.get('planId');
+          result.messages.add(message);
+        } else if (messageEntry instanceof String) {
+          AgentforceChatMessage message = new AgentforceChatMessage();
+          message.message = (String) messageEntry;
+          result.messages.add(message);
+        }
+      }
+    }
+
+    if (String.isBlank(result.message) && !result.messages.isEmpty()) {
+      result.message = result.messages[0].message;
+    }
+
+    Object linksValue = responseMap.get('_links');
+    if (linksValue instanceof Map<String, Object>) {
+      result.links = (Map<String, Object>) linksValue;
+    }
+
+    return result;
   }
 
   @AuraEnabled
@@ -710,6 +759,40 @@ public with sharing class AgentforceChatController {
   public class AgentforceChatResponse {
     @AuraEnabled
     public String message { get; set; }
+
+    @AuraEnabled
+    public List<AgentforceChatMessage> messages { get; set; }
+
+    @AuraEnabled
+    public Map<String, Object> links { get; set; }
+
+    @AuraEnabled
+    public String rawBody { get; set; }
+
+    public AgentforceChatResponse() {
+      messages = new List<AgentforceChatMessage>();
+      links = new Map<String, Object>();
+    }
+  }
+
+  public class AgentforceChatMessage {
+    @AuraEnabled
+    public String type { get; set; }
+
+    @AuraEnabled
+    public String feedbackId { get; set; }
+
+    @AuraEnabled
+    public Boolean isContentSafe { get; set; }
+
+    @AuraEnabled
+    public String message { get; set; }
+
+    @AuraEnabled
+    public String id { get; set; }
+
+    @AuraEnabled
+    public String planId { get; set; }
   }
 
   public class AgentforceStartSessionResult {
