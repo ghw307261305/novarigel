@@ -1,15 +1,6 @@
 <template>
     <section class="chat-window">
         <div class="chat-window__body">
-            <div class="chat-window__status status" data-id="status">
-                <lightning-icon if:true={isLoading} icon-name="utility:refresh" alternative-text="Loading" class="spin"></lightning-icon>
-                <lightning-icon if:true={hasError} icon-name="utility:error" alternative-text="Error" class="error"></lightning-icon>
-                <template if:true={statusMessage}>
-                    <span class="status-text">{statusMessage}</span>
-                </template>
-            </div>
-        </header>
-        <div class="chat-window__body">
             <div class="transcript" data-id="transcript">
                 <template if:true={messages.length}>
                     <template for:each={messages} for:item="message">
