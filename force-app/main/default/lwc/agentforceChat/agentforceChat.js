@@ -59,6 +59,7 @@ export default class AgentforceChat extends LightningElement {
     }
 
     messages = [];
+    lastRenderedMessageCount = 0;
     draftMessage = '';
     isLoading = false;
     errorMessage;
@@ -79,6 +80,20 @@ export default class AgentforceChat extends LightningElement {
             this.errorMessage = 'Configuration error';
             // eslint-disable-next-line no-console
             console.error('AgentforceChat configuration error', error);
+        }
+    }
+
+    renderedCallback() {
+        if (this.messages.length !== this.lastRenderedMessageCount) {
+            this.lastRenderedMessageCount = this.messages.length;
+            this.scrollTranscriptToBottom();
+        }
+    }
+
+    scrollTranscriptToBottom() {
+        const transcript = this.template.querySelector('[data-id="transcript"]');
+        if (transcript) {
+            transcript.scrollTop = transcript.scrollHeight;
         }
     }
 
