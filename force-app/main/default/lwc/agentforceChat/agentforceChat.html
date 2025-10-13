@@ -8,6 +8,8 @@
                     <span class="status-text">{statusMessage}</span>
                 </template>
             </div>
+        </header>
+        <div class="chat-window__body">
             <div class="transcript" data-id="transcript">
                 <template if:true={messages.length}>
                     <template for:each={messages} for:item="message">
