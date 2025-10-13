@@ -43,7 +43,10 @@ public with sharing class AgentforceChatController {
     );
 
     String configuredMessagesEndpoint = config != null
-      ? preferString(config.Messages_Endpoint_Url__c, config.Chat_Endpoint_Url__c)
+      ? preferString(
+          config.Messages_Endpoint_Url__c,
+          config.Chat_Endpoint_Url__c
+        )
       : null;
 
     String resolvedEndpoint = String.isNotBlank(endpointUrl)
@@ -82,7 +85,10 @@ public with sharing class AgentforceChatController {
       consumerSecret
     );
 
-    String messagesEndpoint = applySessionPlaceholder(resolvedEndpoint, sessionId);
+    String messagesEndpoint = applySessionPlaceholder(
+      resolvedEndpoint,
+      sessionId
+    );
     if (String.isNotBlank(messagesEndpoint)) {
       Boolean hasSessionSegment = messagesEndpoint.contains('/sessions/');
       Boolean endsWithMessages = messagesEndpoint.endsWith('/messages');
@@ -107,13 +113,14 @@ public with sharing class AgentforceChatController {
       );
     }
 
+    Map<String, Object> messagePayload = new Map<String, Object>{
+      'sequenceId' => DateTime.now().getTime(),
+      'type' => 'Text',
+      'text' => message != null ? message : ''
+    };
     Map<String, Object> payload = new Map<String, Object>{
-      'botId' => resolvedBotId,
-      'message' => message,
-      'sessionId' => sessionId,
-      'transcript' => transcript != null
-        ? transcript
-        : new List<AgentforceChatTranscriptEntry>()
+      'message' => messagePayload,
+      'variables' => new List<Object>()
     };
     request.setBody(JSON.serialize(payload));
 
@@ -131,10 +138,7 @@ public with sharing class AgentforceChatController {
       if (String.isBlank(response.getBody())) {
         return new AgentforceChatResponse();
       }
-      return (AgentforceChatResponse) JSON.deserialize(
-        response.getBody(),
-        AgentforceChatResponse.class
-      );
+      return parseAgentforceResponse(response.getBody());
     }
 
     String errorMessage = extractErrorMessage(response.getBody());
@@ -142,6 +146,58 @@ public with sharing class AgentforceChatController {
       errorMessage = 'Agentforce request failed';
     }
     throw new AuraHandledException(errorMessage);
+  }
+
+  private static AgentforceChatResponse parseAgentforceResponse(
+    String responseBody
+  ) {
+    AgentforceChatResponse result = new AgentforceChatResponse();
+    result.rawBody = responseBody;
+
+    if (String.isBlank(responseBody)) {
+      return result;
+    }
+
+    Object deserialized = JSON.deserializeUntyped(responseBody);
+    if (!(deserialized instanceof Map<String, Object>)) {
+      return result;
+    }
+
+    Map<String, Object> responseMap = (Map<String, Object>) deserialized;
+
+    Object messagesValue = responseMap.get('messages');
+    if (messagesValue instanceof List<Object>) {
+      for (Object messageEntry : (List<Object>) messagesValue) {
+        if (messageEntry instanceof Map<String, Object>) {
+          Map<String, Object> messageMap = (Map<String, Object>) messageEntry;
+          AgentforceChatMessage message = new AgentforceChatMessage();
+          message.type = (String) messageMap.get('type');
+          message.feedbackId = (String) messageMap.get('feedbackId');
+          if (messageMap.containsKey('isContentSafe')) {
+            message.isContentSafe = (Boolean) messageMap.get('isContentSafe');
+          }
+          message.message = (String) messageMap.get('message');
+          message.id = (String) messageMap.get('id');
+          message.planId = (String) messageMap.get('planId');
+          result.messages.add(message);
+        } else if (messageEntry instanceof String) {
+          AgentforceChatMessage message = new AgentforceChatMessage();
+          message.message = (String) messageEntry;
+          result.messages.add(message);
+        }
+      }
+    }
+
+    if (String.isBlank(result.message) && !result.messages.isEmpty()) {
+      result.message = result.messages[0].message;
+    }
+
+    Object linksValue = responseMap.get('_links');
+    if (linksValue instanceof Map<String, Object>) {
+      result.links = (Map<String, Object>) linksValue;
+    }
+
+    return result;
   }
 
   @AuraEnabled
@@ -154,7 +210,10 @@ public with sharing class AgentforceChatController {
     );
 
     String configuredStartSessionEndpoint = config != null
-      ? preferString(config.Start_Session_Endpoint_Url__c, config.Chat_Endpoint_Url__c)
+      ? preferString(
+          config.Start_Session_Endpoint_Url__c,
+          config.Chat_Endpoint_Url__c
+        )
       : null;
 
     String resolvedEndpoint = String.isNotBlank(endpointUrl)
@@ -208,8 +267,9 @@ public with sharing class AgentforceChatController {
       : new Map<String, Object>();
     applyDefaultStartSessionPayload(payloadToSend);
 
-    String sessionKeyFromPayload = payloadToSend.containsKey('externalSessionKey') &&
-      payloadToSend.get('externalSessionKey') instanceof String
+    String sessionKeyFromPayload = payloadToSend.containsKey(
+        'externalSessionKey'
+      ) && payloadToSend.get('externalSessionKey') instanceof String
       ? (String) payloadToSend.get('externalSessionKey')
       : null;
 
@@ -359,7 +419,10 @@ public with sharing class AgentforceChatController {
     }
 
     Object existingSessionKey = payload.get('externalSessionKey');
-    if (!(existingSessionKey instanceof String) || String.isBlank((String) existingSessionKey)) {
+    if (
+      !(existingSessionKey instanceof String) ||
+      String.isBlank((String) existingSessionKey)
+    ) {
       payload.put('externalSessionKey', generateExternalSessionKey());
     }
 
@@ -368,7 +431,9 @@ public with sharing class AgentforceChatController {
       payload.containsKey('instanceConfig') &&
       payload.get('instanceConfig') instanceof Map<String, Object>
     ) {
-      instanceConfig.putAll((Map<String, Object>) payload.get('instanceConfig'));
+      instanceConfig.putAll(
+        (Map<String, Object>) payload.get('instanceConfig')
+      );
     }
     if (
       !instanceConfig.containsKey('endpoint') ||
@@ -396,7 +461,8 @@ public with sharing class AgentforceChatController {
     }
 
     Boolean hasVariables =
-      payload.containsKey('variables') && payload.get('variables') instanceof List<Object> &&
+      payload.containsKey('variables') &&
+      payload.get('variables') instanceof List<Object> &&
       !((List<Object>) payload.get('variables')).isEmpty();
     if (!hasVariables) {
       List<Object> variables = new List<Object>();
@@ -426,7 +492,8 @@ public with sharing class AgentforceChatController {
 
     Object featureSupport = payload.get('featureSupport');
     if (
-      !(featureSupport instanceof String) || String.isBlank((String) featureSupport)
+      !(featureSupport instanceof String) ||
+      String.isBlank((String) featureSupport)
     ) {
       payload.put('featureSupport', 'Streaming');
     }
@@ -492,8 +559,7 @@ public with sharing class AgentforceChatController {
     }
 
     if (
-      String.isBlank(result.messagesUrl) &&
-      String.isNotBlank(result.sessionUrl)
+      String.isBlank(result.messagesUrl) && String.isNotBlank(result.sessionUrl)
     ) {
       String normalizedSessionUrl = result.sessionUrl.endsWith('/messages')
         ? result.sessionUrl
@@ -502,15 +568,17 @@ public with sharing class AgentforceChatController {
     }
 
     if (
-      String.isBlank(result.messagesUrl) &&
-      String.isNotBlank(result.sessionId)
+      String.isBlank(result.messagesUrl) && String.isNotBlank(result.sessionId)
     ) {
       String baseSessionsUrl = extractString(
         result.data,
         new List<String>{ 'baseSessionsUrl', 'sessionsUrl', 'endpoint' }
       );
       if (String.isNotBlank(baseSessionsUrl)) {
-        result.messagesUrl = buildMessagesUrl(baseSessionsUrl, result.sessionId);
+        result.messagesUrl = buildMessagesUrl(
+          baseSessionsUrl,
+          result.sessionId
+        );
       }
     }
   }
@@ -534,9 +602,9 @@ public with sharing class AgentforceChatController {
     }
 
     return normalizedBase +
-    '/' +
-    EncodingUtil.urlEncode(sessionId, 'UTF-8') +
-    '/messages';
+      '/' +
+      EncodingUtil.urlEncode(sessionId, 'UTF-8') +
+      '/messages';
   }
 
   private static String extractString(
@@ -691,6 +759,40 @@ public with sharing class AgentforceChatController {
   public class AgentforceChatResponse {
     @AuraEnabled
     public String message { get; set; }
+
+    @AuraEnabled
+    public List<AgentforceChatMessage> messages { get; set; }
+
+    @AuraEnabled
+    public Map<String, Object> links { get; set; }
+
+    @AuraEnabled
+    public String rawBody { get; set; }
+
+    public AgentforceChatResponse() {
+      messages = new List<AgentforceChatMessage>();
+      links = new Map<String, Object>();
+    }
+  }
+
+  public class AgentforceChatMessage {
+    @AuraEnabled
+    public String type { get; set; }
+
+    @AuraEnabled
+    public String feedbackId { get; set; }
+
+    @AuraEnabled
+    public Boolean isContentSafe { get; set; }
+
+    @AuraEnabled
+    public String message { get; set; }
+
+    @AuraEnabled
+    public String id { get; set; }
+
+    @AuraEnabled
+    public String planId { get; set; }
   }
 
   public class AgentforceStartSessionResult {
