@@ -12,9 +12,7 @@ const ROLE_LABELS = {
 };
 
 const STATUS = {
-    READY: 'Ready to chat',
-    SENDING: 'Sending message…',
-    ERROR: 'Unable to send message'
+    SENDING: 'Sending message…'
 };
 
 export default class AgentforceChat extends LightningElement {
@@ -63,6 +61,7 @@ export default class AgentforceChat extends LightningElement {
     draftMessage = '';
     isLoading = false;
     errorMessage;
+    statusMessageId;
     sessionId;
     sessionKey;
     messagesEndpoint;
@@ -95,20 +94,6 @@ export default class AgentforceChat extends LightningElement {
         if (transcript) {
             transcript.scrollTop = transcript.scrollHeight;
         }
-    }
-
-    get statusMessage() {
-        if (this.errorMessage) {
-            return `${STATUS.ERROR}: ${this.errorMessage}`;
-        }
-        if (this.isLoading) {
-            return STATUS.SENDING;
-        }
-        return STATUS.READY;
-    }
-
-    get hasError() {
-        return Boolean(this.errorMessage);
     }
 
     get isSendDisabled() {
@@ -168,6 +153,7 @@ export default class AgentforceChat extends LightningElement {
         }
 
         this.appendUserMessage(normalizedContent);
+        this.showStatusMessage(STATUS.SENDING);
 
         try {
             const response = await this.performAgentforceSend(normalizedContent);
@@ -193,6 +179,7 @@ export default class AgentforceChat extends LightningElement {
         this.messages = [...this.messages, userMessage];
         this.errorMessage = undefined;
         this.isLoading = true;
+        this.removeStatusMessage();
     }
 
     async performAgentforceSend(content) {
@@ -202,20 +189,21 @@ export default class AgentforceChat extends LightningElement {
     appendAgentResponses(response) {
         const agentResponses = this.buildAgentResponses(response);
         if (agentResponses.length === 0) {
-            const fallback = this.createMessage(
-                'agent',
-                'Agentforce response missing message.'
-            );
-            this.messages = [...this.messages, fallback];
-        } else {
-            this.messages = [...this.messages, ...agentResponses];
+            this.updateStatusMessage('Agentforce response missing message.', 'status', true);
+            return;
+        }
+
+        const [firstResponse, ...additionalResponses] = agentResponses;
+        this.replaceStatusMessageWith(firstResponse);
+
+        if (additionalResponses.length) {
+            this.messages = [...this.messages, ...additionalResponses];
         }
     }
 
     handleAgentforceError(error) {
         this.errorMessage = this.normalizeError(error);
-        const errorMessage = this.createMessage('agent', this.errorMessage, 'error');
-        this.messages = [...this.messages, errorMessage];
+        this.updateStatusMessage(this.errorMessage, 'error', true);
     }
 
     async sendMessageToAgentforce(content) {
@@ -545,7 +533,59 @@ export default class AgentforceChat extends LightningElement {
                 minute: 'numeric',
                 hour12: true
             }).format(new Date(timestamp)),
-            cssClass: `message ${role}${variant ? ` ${variant}` : ''}`
+            cssClass: `message ${role}${variant ? ` ${variant}` : ''}`,
+            isAgent: role === 'agent'
         };
+    }
+
+    showStatusMessage(content, variant = 'status') {
+        const statusMessage = this.createMessage('agent', content, variant);
+        this.statusMessageId = statusMessage.id;
+        this.messages = [...this.messages, statusMessage];
+    }
+
+    updateStatusMessage(content, variant = 'status', finalize = false) {
+        if (!this.statusMessageId) {
+            if (finalize) {
+                this.messages = [...this.messages, this.createMessage('agent', content, variant)];
+                return;
+            }
+            this.showStatusMessage(content, variant);
+            return;
+        }
+
+        const statusId = this.statusMessageId;
+        const replacement = this.createMessage('agent', content, variant);
+
+        this.messages = this.messages.map((message) =>
+            message.id === statusId ? { ...replacement, id: statusId } : message
+        );
+
+        if (finalize) {
+            this.statusMessageId = undefined;
+        }
+    }
+
+    replaceStatusMessageWith(message) {
+        if (!this.statusMessageId) {
+            this.messages = [...this.messages, message];
+            return;
+        }
+
+        const statusId = this.statusMessageId;
+        this.messages = this.messages.map((existing) =>
+            existing.id === statusId ? { ...message, id: statusId } : existing
+        );
+        this.statusMessageId = undefined;
+    }
+
+    removeStatusMessage() {
+        if (!this.statusMessageId) {
+            return;
+        }
+
+        const statusId = this.statusMessageId;
+        this.messages = this.messages.filter((message) => message.id !== statusId);
+        this.statusMessageId = undefined;
     }
 }
