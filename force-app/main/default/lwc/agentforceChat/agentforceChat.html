@@ -1,7 +1,7 @@
 <template>
-    <lightning-card title="Agentforce Chat" icon-name="custom:custom14">
-        <div class="chat">
-            <div class="status" data-id="status">
+    <section class="chat-window">
+        <div class="chat-window__body">
+            <div class="chat-window__status status" data-id="status">
                 <lightning-icon if:true={isLoading} icon-name="utility:refresh" alternative-text="Loading" class="spin"></lightning-icon>
                 <lightning-icon if:true={hasError} icon-name="utility:error" alternative-text="Error" class="error"></lightning-icon>
                 <template if:true={statusMessage}>
@@ -12,30 +12,45 @@
                 <template if:true={messages.length}>
                     <template for:each={messages} for:item="message">
                         <div key={message.id} class={message.cssClass} data-role={message.role}>
-                            <div class="message-metadata">
-                                <span class="role">{message.roleLabel}</span>
-                                <span class="timestamp">{message.formattedTimestamp}</span>
+                            <template if:true={message.isAgent}>
+                                <span class="message__avatar" aria-hidden="true">
+                                    <lightning-icon
+                                        icon-name="utility:bot"
+                                        alternative-text="Agentforce bot"
+                                        size="x-small"
+                                        class="message__avatar-icon"
+                                    ></lightning-icon>
+                                </span>
+                            </template>
+                            <div class="message__content">
+                                <div class="message-body">{message.content}</div>
+                                <div class="message-metadata">
+                                    <span class="role">{message.roleLabel}</span>
+                                    <span class="timestamp">{message.formattedTimestamp}</span>
+                                </div>
                             </div>
-                            <div class="message-body">{message.content}</div>
                         </div>
                     </template>
                 </template>
                 <template if:false={messages.length}>
-                    <p class="placeholder">No messages yet. Say hello to start the conversation.</p>
+                    <p class="placeholder">まだメッセージはありません。まずは挨拶してみましょう。</p>
                 </template>
             </div>
             <div class="composer" data-id="composer">
                 <lightning-textarea
                     value={draftMessage}
                     onchange={handleDraftChange}
-                    placeholder="Type your message..."
+                    placeholder="メッセージを入力してください..."
                     data-id="composer-input"
-                    label="Your message"
+                    label="メッセージ"
                     maxlength="4000"
                 ></lightning-textarea>
                 <lightning-button
                     variant="brand"
-                    label="Send"
+                    label="送信"
+                    title="送信"
+                    icon-name="utility:send"
+                    icon-position="right"
                     onclick={handleSend}
                     disabled={isSendDisabled}
                     class="composer-send"
@@ -43,5 +58,5 @@
                 ></lightning-button>
             </div>
         </div>
-    </lightning-card>
+    </section>
 </template>
