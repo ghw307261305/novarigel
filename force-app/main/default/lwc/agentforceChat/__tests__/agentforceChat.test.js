@@ -85,7 +85,14 @@ describe('c-agentforce-chat', () => {
             messagesUrl: 'https://example.com/api/sessions/session-123/messages',
             externalSessionKey: 'abc'
         });
-        mockSendMessage.mockResolvedValue({ message: 'Hello from Agentforce' });
+        mockSendMessage.mockResolvedValue({
+            messages: [
+                {
+                    type: 'Inform',
+                    message: 'Hello from Agentforce'
+                }
+            ]
+        });
 
         const textarea = element.shadowRoot.querySelector('lightning-textarea');
         textarea.value = 'Hi there';
@@ -177,7 +184,14 @@ describe('c-agentforce-chat', () => {
         mockStartSession.mockResolvedValue({
             sessionId: 'session-789'
         });
-        mockSendMessage.mockResolvedValue({ message: 'Reply' });
+        mockSendMessage.mockResolvedValue({
+            messages: [
+                {
+                    type: 'Inform',
+                    message: 'Reply'
+                }
+            ]
+        });
 
         const textarea = element.shadowRoot.querySelector('lightning-textarea');
         textarea.value = 'Hi there';
@@ -225,7 +239,14 @@ describe('c-agentforce-chat', () => {
         mockStartSession.mockResolvedValue({
             sessionId: 'session-456'
         });
-        mockSendMessage.mockResolvedValue({ message: 'Reply' });
+        mockSendMessage.mockResolvedValue({
+            messages: [
+                {
+                    type: 'Inform',
+                    message: 'Reply'
+                }
+            ]
+        });
 
         const textarea = element.shadowRoot.querySelector('lightning-textarea');
         textarea.value = 'Hi there';
