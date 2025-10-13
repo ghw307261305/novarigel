@@ -545,7 +545,8 @@ export default class AgentforceChat extends LightningElement {
                 minute: 'numeric',
                 hour12: true
             }).format(new Date(timestamp)),
-            cssClass: `message ${role}${variant ? ` ${variant}` : ''}`
+            cssClass: `message ${role}${variant ? ` ${variant}` : ''}`,
+            isAgent: role === 'agent'
         };
     }
 }
