@@ -21,6 +21,10 @@
         <name>ApexTrigger</name>
     </types>
     <types>
+        <members>Agentforce_Config__mdt</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
         <members>myComponent</members>
         <members>purchaseHistory</members>
         <members>*</members>
