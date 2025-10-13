@@ -39,13 +39,6 @@
     padding: var(--lwc-spacingXLarge, 2rem) 0;
 }
 
-.state--overlay {
-    position: absolute;
-    inset: 0;
-    background-color: rgba(255, 255, 255, 0.8);
-    z-index: 5;
-}
-
 .state--error {
     flex-direction: column;
     gap: var(--lwc-spacingSmall, 0.75rem);
