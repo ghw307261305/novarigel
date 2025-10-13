@@ -19,12 +19,6 @@
                 </div>
             </template>
 
-            <template if:true={isLaunchingAgent}>
-                <div class="state state--overlay">
-                    <lightning-spinner alternative-text="返品・交換サポートを起動中" size="small"></lightning-spinner>
-                </div>
-            </template>
-
             <template if:true={error}>
                 <div class="state state--error slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error"
                     role="alert">
@@ -88,8 +82,6 @@
                                                     data-order-number={order.orderNumber}
                                                     data-order-item-id={orderItem.orderItemId}
                                                     data-product-name={orderItem.productName}
-                                                    disabled={isLaunchingAgent}
-                                                    aria-busy={isLaunchingAgent}
                                                 >
                                                     返品・交換
                                                 </button>

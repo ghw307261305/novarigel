@@ -1,14 +1,12 @@
 import { LightningElement, api } from 'lwc';
 import getPurchaseHistory from '@salesforce/apex/PurchaseHistoryController.getPurchaseHistory';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import { launchReturnsAgentUi } from 'c/returnsAgentLauncher';
 
 export default class PurchaseHistory extends LightningElement {
     @api recordId = '001gK00000KKvNCQA1';
     orders = [];
     error;
     isLoading = false;
-    isLaunchingAgent = false;
     isAgentforceChatVisible = false;
 
     connectedCallback() {
@@ -68,52 +66,33 @@ export default class PurchaseHistory extends LightningElement {
 
     async handleReturnExchange(event) {
         const button = event.currentTarget;
-        const { orderId, orderItemId, orderNumber, productName } = button.dataset;
-        const hasOrderContext = Boolean(orderId || orderItemId);
-        const contextLabel =
-            productName && orderNumber
-                ? `${productName}（注文番号: ${orderNumber}）`
-                : productName || (orderNumber ? `注文番号: ${orderNumber}` : '商品');
+        const { orderNumber, productName } = button.dataset;
 
-        if (!hasOrderContext) {
+        if (!orderNumber) {
             this.dispatchEvent(
                 new ShowToastEvent({
                     title: '返品・交換サポート',
                     message:
-                        '返品・交換対象の商品情報を取得できませんでした。時間をおいて再度お試しください。',
+                        '注文番号を取得できませんでした。時間をおいて再度お試しください。',
                     variant: 'error'
                 })
             );
             return;
         }
 
-        this.isLaunchingAgent = true;
+        await this.openAgentforceChat(orderNumber);
 
-        this.openAgentforceChat(orderNumber);
+        const contextLabel = productName
+            ? `${productName}（注文番号: ${orderNumber}）`
+            : `注文番号: ${orderNumber}`;
 
-        try {
-            await launchReturnsAgentUi({
-                context: { orderId, orderItemId }
-            });
-
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: '返品・交換サポート',
-                    message: `${contextLabel}の返品・交換サポートを開始しました。`,
-                    variant: 'success'
-                })
-            );
-        } catch (error) {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: '返品・交換サポートの起動に失敗しました',
-                    message: this.getErrorMessageFrom(error),
-                    variant: 'error'
-                })
-            );
-        } finally {
-            this.isLaunchingAgent = false;
-        }
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title: '返品・交換サポート',
+                message: `${contextLabel}のサポートチャットを開始しました。`,
+                variant: 'success'
+            })
+        );
     }
 
     async openAgentforceChat(orderNumber) {
@@ -293,25 +272,4 @@ export default class PurchaseHistory extends LightningElement {
         return `商品数: ${this.formatNumber(value)}点`;
     }
 
-    getErrorMessageFrom(error) {
-        const defaultMessage = '予期せぬエラーが発生しました。時間をおいて再度お試しください。';
-
-        if (!error) {
-            return defaultMessage;
-        }
-
-        if (Array.isArray(error.body)) {
-            return error.body.map((item) => item.message).join(', ');
-        }
-
-        if (typeof error.body?.message === 'string') {
-            return error.body.message;
-        }
-
-        if (typeof error.message === 'string') {
-            return error.message;
-        }
-
-        return defaultMessage;
-    }
 }
