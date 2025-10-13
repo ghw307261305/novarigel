@@ -153,9 +153,16 @@ export default class AgentforceChat extends LightningElement {
 
         try {
             const response = await this.sendMessageToAgentforce(draft);
-            const agentMessageText = response && response.message ? response.message : 'Agentforce response missing message.';
-            const agentResponse = this.createMessage('agent', agentMessageText);
-            this.messages = [...this.messages, agentResponse];
+            const agentResponses = this.buildAgentResponses(response);
+            if (agentResponses.length === 0) {
+                const fallback = this.createMessage(
+                    'agent',
+                    'Agentforce response missing message.'
+                );
+                this.messages = [...this.messages, fallback];
+            } else {
+                this.messages = [...this.messages, ...agentResponses];
+            }
         } catch (error) {
             this.errorMessage = this.normalizeError(error);
             const errorMessage = this.createMessage('agent', this.errorMessage, 'error');
@@ -418,6 +425,65 @@ export default class AgentforceChat extends LightningElement {
             return error.message;
         }
         return 'Unexpected error';
+    }
+
+    buildAgentResponses(response) {
+        if (!response) {
+            return [];
+        }
+
+        const agentMessages = [];
+
+        if (Array.isArray(response.messages) && response.messages.length) {
+            response.messages.forEach((payload) => {
+                const content = this.extractAgentMessageContent(payload);
+                if (!content) {
+                    return;
+                }
+
+                const variant = this.extractAgentMessageVariant(payload);
+                agentMessages.push(this.createMessage('agent', content, variant));
+            });
+        }
+
+        if (!agentMessages.length && response.message) {
+            agentMessages.push(this.createMessage('agent', response.message));
+        }
+
+        return agentMessages;
+    }
+
+    extractAgentMessageContent(payload) {
+        if (!payload) {
+            return '';
+        }
+
+        if (typeof payload === 'string') {
+            return payload;
+        }
+
+        if (typeof payload.message === 'string' && payload.message.trim()) {
+            return payload.message;
+        }
+
+        if (typeof payload.text === 'string' && payload.text.trim()) {
+            return payload.text;
+        }
+
+        return '';
+    }
+
+    extractAgentMessageVariant(payload) {
+        if (!payload || typeof payload.type !== 'string') {
+            return '';
+        }
+
+        const normalized = payload.type.trim().toLowerCase();
+        if (!normalized || normalized === 'text') {
+            return '';
+        }
+
+        return `type-${normalized}`;
     }
 
     createMessage(role, content, variant = '') {
