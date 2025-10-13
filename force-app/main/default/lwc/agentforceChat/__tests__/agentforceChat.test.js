@@ -155,12 +155,14 @@ describe('c-agentforce-chat', () => {
         const button = element.shadowRoot.querySelector('lightning-button');
         button.click();
 
+        const statusBubble = element.shadowRoot.querySelector('.message.status .message-body');
+        expect(statusBubble).not.toBeNull();
+        expect(statusBubble.textContent).toBe('Sending message…');
+
         await flushPromises();
         await flushPromises();
 
-        const statusText = element.shadowRoot.querySelector('[data-id="status"] .status-text');
-        expect(statusText.textContent).toContain('Unable to send message');
-        expect(statusText.textContent).toContain('Agentforce request failed');
+        expect(element.shadowRoot.querySelector('.message.status')).toBeNull();
 
         const agentMessage = element.shadowRoot.querySelector('div[data-role="agent"] .message-body');
         expect(agentMessage.textContent).toBe('Agentforce request failed');

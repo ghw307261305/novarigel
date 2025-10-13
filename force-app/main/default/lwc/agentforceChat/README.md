@@ -27,7 +27,8 @@ This Lightning Web Component renders an Agentforce-powered chat experience for E
 
 - Messages sent from the composer are posted to the configured Agentforce REST endpoint along with the existing transcript. Before each chat callout, the controller performs the OAuth client credentials flow using the stored client ID and secret and passes the resulting bearer token to the chat service.
 - Agent responses are appended to the transcript when the API returns.
-- Errors are surfaced in the status banner and echoed into the transcript for quick diagnosis.
+- Status updates (sending state and errors) appear inline within the agent transcript so customers can track progress without a
+  separate header.
 
 ## Testing
 
