@@ -213,8 +213,17 @@ public with sharing class ReturnEligibilityService {
             return result;
         }
 
-        ReturnReasonCategory category = categorizeReason(returnReason);
-        result.reasonCategory = category != null ? category.name() : null;
+        ReturnReasonCategory category = null;
+        String normalizedReason = returnReason != null ? returnReason.trim() : null;
+        if (!String.isBlank(normalizedReason)) {
+            try {
+                String enumKey = normalizedReason.replace('-', '_').replace(' ', '_').toUpperCase();
+                category = ReturnReasonCategory.valueOf(enumKey);
+            } catch (Exception ex) {
+                // 理由が事前定義カテゴリと一致しない場合はカテゴリ判定を行いません。
+            }
+        }
+        result.reasonCategory = category != null ? category.name() : normalizedReason;
 
         Boolean reasonMatchesPolicy = category != null && isReasonAllowedByPolicy(policy.PolicyType__c, category);
         if (reasonMatchesPolicy) {
@@ -299,39 +308,6 @@ public with sharing class ReturnEligibilityService {
         }
 
         return true;
-    }
-
-    private static ReturnReasonCategory categorizeReason(String reason) {
-        if (String.isBlank(reason)) {
-            return null;
-        }
-
-        String normalized = reason.toLowerCase();
-        if (normalized.contains('ほつれ') || normalized.contains('破れ') || normalized.contains('壊れ') ||
-            normalized.contains('不良') || normalized.contains('欠陥') || normalized.contains('fault') ||
-            normalized.contains('damage') || normalized.contains('damaged') || normalized.contains('defect')) {
-            return ReturnReasonCategory.DEFECTIVE;
-        }
-
-        if (normalized.contains('サイズ') || normalized.contains('大き') || normalized.contains('小さ') ||
-            normalized.contains('fit') || normalized.contains('きつ') || normalized.contains('ゆる') ||
-            normalized.contains('丈が') || normalized.contains('幅が')) {
-            return ReturnReasonCategory.SIZE_FIT;
-        }
-
-        if (normalized.contains('イメージ') || normalized.contains('色が') || normalized.contains('色違い') ||
-            normalized.contains('デザイン') || normalized.contains('思っていた') || normalized.contains('見た目') ||
-            normalized.contains('color')) {
-            return ReturnReasonCategory.APPEARANCE;
-        }
-
-        if (normalized.contains('不要') || normalized.contains('使わない') || normalized.contains('要らなく') ||
-            normalized.contains('間違って') || normalized.contains('キャンセル') || normalized.contains('気が変わった') ||
-            normalized.contains('不要になった') || normalized.contains('不要になりまし') || normalized.contains('不要です')) {
-            return ReturnReasonCategory.UNWANTED;
-        }
-
-        return ReturnReasonCategory.OTHER;
     }
 
     private static Boolean isReasonAllowedByPolicy(String policyType, ReturnReasonCategory category) {
