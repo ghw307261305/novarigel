@@ -365,28 +365,46 @@ public with sharing class ReturnEligibilityService {
             }
         }
         String namePattern = normalizedName != null ? '%' + normalizedName + '%' : null;
-        String codePattern = !String.isBlank(baseCode) ? baseCode + '%' : null;
+        String normalizedLower = normalizedName != null ? normalizedName.toLowerCase() : null;
+        String baseCodeLower = !String.isBlank(baseCode) ? baseCode.toLowerCase() : null;
 
-        List<Product2> variationCandidates = new List<Product2>();
+        List<Product2> rawVariations = new List<Product2>();
         if (!String.isBlank(family)) {
-            variationCandidates = [
+            rawVariations = [
                 SELECT Id, Name, ProductCode, Family, Description
                 FROM Product2
                 WHERE IsActive = true
                   AND Id != :product.Id
                   AND Family = :family
-                  AND (
-                        (:namePattern != null AND Name LIKE :namePattern)
-                     OR (:codePattern != null AND ProductCode LIKE :codePattern)
-                     OR (:namePattern = null AND :codePattern = null)
-                  )
                 ORDER BY CreatedDate DESC
-                LIMIT 5
+                LIMIT 25
             ];
         }
 
+        List<Product2> variationCandidates = new List<Product2>();
+        if (!rawVariations.isEmpty()) {
+            for (Product2 candidate : rawVariations) {
+                if (variationCandidates.size() >= 5) {
+                    break;
+                }
+                Boolean matches = false;
+                if (normalizedLower != null && candidate.Name != null && candidate.Name.toLowerCase().contains(normalizedLower)) {
+                    matches = true;
+                }
+                if (!matches && baseCodeLower != null && candidate.ProductCode != null && candidate.ProductCode.toLowerCase().startsWith(baseCodeLower)) {
+                    matches = true;
+                }
+                if (!matches && normalizedLower == null && baseCodeLower == null) {
+                    matches = true;
+                }
+                if (matches) {
+                    variationCandidates.add(candidate);
+                }
+            }
+        }
+
         if (variationCandidates.isEmpty() && !String.isBlank(normalizedName)) {
-            variationCandidates = [
+            rawVariations = [
                 SELECT Id, Name, ProductCode, Family, Description
                 FROM Product2
                 WHERE IsActive = true
@@ -395,6 +413,7 @@ public with sharing class ReturnEligibilityService {
                 ORDER BY CreatedDate DESC
                 LIMIT 5
             ];
+            variationCandidates.addAll(rawVariations);
         }
 
         List<ProductSuggestion> suggestions = new List<ProductSuggestion>();
@@ -439,7 +458,7 @@ public with sharing class ReturnEligibilityService {
                   AND Product2.Family = :family
                   AND UnitPrice >= :minPrice
                   AND UnitPrice <= :maxPrice
-                ORDER BY ABS(UnitPrice - :comparisonPrice)
+                ORDER BY UnitPrice ASC
                 LIMIT 5
             ];
             for (PricebookEntry entry : entries) {
