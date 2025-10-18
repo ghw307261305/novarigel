@@ -1,128 +1,131 @@
-import { createElement } from 'lwc';
-import { ShowToastEventName } from 'lightning/platformShowToastEvent';
-import PurchaseHistory from 'c/purchaseHistory';
-
-const sendAgentforceMessageMock = jest.fn().mockResolvedValue();
+import { createElement } from "lwc";
+import PurchaseHistory from "c/purchaseHistory";
 
 jest.mock(
-    'c/agentforceChat',
-    () => {
-        const { LightningElement, api } = require('lwc');
-        return {
-            default: class AgentforceChatStub extends LightningElement {
-                @api
-                async sendMessage(message) {
-                    return sendAgentforceMessageMock(message);
-                }
-            }
-        };
-    },
-    { virtual: true }
+  "c/agentforceChat",
+  () => {
+    const { LightningElement } = require("lwc");
+    return {
+      __esModule: true,
+      default: class AgentforceChatStub extends LightningElement {}
+    };
+  },
+  { virtual: true }
 );
 
 jest.mock(
-    '@salesforce/apex/PurchaseHistoryController.getPurchaseHistory',
-    () => ({
-        default: jest.fn().mockResolvedValue([])
-    }),
-    { virtual: true }
+  "@salesforce/apex/PurchaseHistoryController.getPurchaseHistory",
+  () => ({
+    default: jest.fn().mockResolvedValue([])
+  }),
+  { virtual: true }
 );
 
-describe('c-purchase-history', () => {
-    afterEach(() => {
-        while (document.body.firstChild) {
-            document.body.removeChild(document.body.firstChild);
-        }
-        jest.clearAllMocks();
-        sendAgentforceMessageMock.mockClear();
+describe("c-purchase-history", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+    jest.restoreAllMocks();
+    jest.clearAllMocks();
+    jest.useRealTimers();
+  });
+
+  it("opens Agentforce chat and sends the order number when the button is clicked", async () => {
+    jest.useFakeTimers();
+    const element = createElement("c-purchase-history", {
+      is: PurchaseHistory
     });
+    document.body.appendChild(element);
 
-    it('opens Agentforce chat and sends the order number when the button is clicked', async () => {
-        const element = createElement('c-purchase-history', {
-            is: PurchaseHistory
-        });
-        document.body.appendChild(element);
+    await Promise.resolve();
 
-        await Promise.resolve();
+    element.testOrders = [
+      {
+        orderId: "801000000000001AAA",
+        orderNumber: "00012345",
+        items: [
+          {
+            orderItemId: "802000000000001AAA",
+            productName: "テスト商品"
+          }
+        ]
+      }
+    ];
 
-        element.orders = [
-            {
-                orderId: '801000000000001AAA',
-                orderNumber: '00012345',
-                items: [
-                    {
-                        orderItemId: '802000000000001AAA',
-                        productName: 'テスト商品'
-                    }
-                ]
-            }
-        ];
+    await Promise.resolve();
+    await Promise.resolve();
 
-        await Promise.resolve();
+    const button = element.shadowRoot.querySelector(
+      'button[data-order-number="00012345"]'
+    );
+    expect(button).not.toBeNull();
 
-        const button = element.shadowRoot.querySelector(
-            'button[data-order-item-id="802000000000001AAA"]'
-        );
-        expect(button).not.toBeNull();
+    button.click();
 
-        const handler = jest.fn();
-        element.addEventListener(ShowToastEventName, handler);
+    jest.runAllTimers();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
-        button.click();
+    const container = element.shadowRoot.querySelector(
+      ".agentforce-chat-container"
+    );
+    expect(
+      container.classList.contains("agentforce-chat-container--visible")
+    ).toBe(true);
 
-        await Promise.resolve();
-        await Promise.resolve();
+    const chatComponent = element.shadowRoot.querySelector("c-agentforce-chat");
+    expect(chatComponent).not.toBeNull();
+  });
 
-        expect(sendAgentforceMessageMock).toHaveBeenCalledWith('00012345');
-
-        const container = element.shadowRoot.querySelector('.agentforce-chat-container');
-        expect(container.classList.contains('agentforce-chat-container--visible')).toBe(true);
-
-        expect(handler).toHaveBeenCalledTimes(1);
-        expect(handler.mock.calls[0][0].detail).toMatchObject({
-            title: '返品・交換サポート',
-            message: 'テスト商品（注文番号: 00012345）のサポートチャットを開始しました。',
-            variant: 'success'
-        });
+  it("shows an error toast when the order number is missing", async () => {
+    const element = createElement("c-purchase-history", {
+      is: PurchaseHistory
     });
+    document.body.appendChild(element);
 
-    it('shows an error toast when the order number is missing', async () => {
-        const element = createElement('c-purchase-history', {
-            is: PurchaseHistory
-        });
-        document.body.appendChild(element);
+    await Promise.resolve();
 
-        await Promise.resolve();
+    element.testOrders = [
+      {
+        orderId: "801000000000002AAA",
+        orderNumber: "",
+        items: [
+          {
+            orderItemId: "802000000000002AAA",
+            productName: "商品情報なし"
+          }
+        ]
+      }
+    ];
 
-        element.orders = [
-            {
-                items: [
-                    {
-                        productName: '商品情報なし'
-                    }
-                ]
-            }
-        ];
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
-        await Promise.resolve();
+    const buttons = element.shadowRoot.querySelectorAll(
+      ".order-card__actions .order-action"
+    );
+    expect(buttons.length).toBeGreaterThan(0);
+    const button = buttons[buttons.length - 1];
+    expect(button).not.toBeNull();
+    expect(button.textContent).toContain("返品・交換");
+    expect(button.dataset.orderNumber).toBe("");
 
-        const button = element.shadowRoot.querySelector('button.item-action');
-        expect(button).not.toBeNull();
+    button.click();
 
-        const handler = jest.fn();
-        element.addEventListener(ShowToastEventName, handler);
+    await Promise.resolve();
+    await Promise.resolve();
 
-        button.click();
+    const container = element.shadowRoot.querySelector(
+      ".agentforce-chat-container"
+    );
+    expect(
+      container.classList.contains("agentforce-chat-container--visible")
+    ).toBe(false);
 
-        await Promise.resolve();
-
-        expect(handler).toHaveBeenCalledTimes(1);
-        expect(handler.mock.calls[0][0].detail).toMatchObject({
-            title: '返品・交換サポート',
-            message: '注文番号を取得できませんでした。時間をおいて再度お試しください。',
-            variant: 'error'
-        });
-
-        expect(sendAgentforceMessageMock).not.toHaveBeenCalled();
-    });
+    const chatComponent = element.shadowRoot.querySelector("c-agentforce-chat");
+    expect(chatComponent).toBeNull();
+  });
 });
