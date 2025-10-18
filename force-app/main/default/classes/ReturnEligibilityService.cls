@@ -1,3 +1,10 @@
+/**
+ * @description       : 
+ * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+ * @group             : 
+ * @last modified on  : 10-18-2025
+ * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+**/
 public with sharing class ReturnEligibilityService {
     public class EvaluationInput {
         @InvocableVariable(required=true)
@@ -216,10 +223,9 @@ public with sharing class ReturnEligibilityService {
         }
 
         if (String.isBlank(returnReason)) {
-            result.primaryMessage = '返品理由カテゴリを選択してください。';
+            result.primaryMessage = '返品理由をお聞かせください。';
             result.isReturnable = true;
             result.requiresReason = true;
-            result.availableReasonCategories = getAvailableReasonCategories();
             result.status = 'ASK_REASON';
             return result;
         }
@@ -334,7 +340,6 @@ public with sharing class ReturnEligibilityService {
             Set<ReturnReasonCategory> allowed = POLICY_REASON_MAP.get(key);
             return allowed != null && allowed.contains(category);
         }
-    }
 
         return false;
     }
@@ -364,8 +369,6 @@ public with sharing class ReturnEligibilityService {
         if (String.isBlank(rawValue)) {
             return null;
         }
-        return mapping;
-    }
 
         String trimmed = rawValue.trim();
         if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
