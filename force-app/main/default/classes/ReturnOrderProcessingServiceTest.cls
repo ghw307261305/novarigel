@@ -9,7 +9,7 @@ private class ReturnOrderProcessingServiceTest {
         request.orderNumber = 'ORD-10001';
         request.productCode = data.returnableProductCode;
         request.quantity = 1;
-        request.returnReason = '糸のほつれがありました';
+        request.returnReason = '  糸のほつれがありました  ';
 
         Test.startTest();
         ReturnOrderProcessingService.Response response = ReturnOrderProcessingService.processReturn(request);
@@ -18,6 +18,7 @@ private class ReturnOrderProcessingServiceTest {
         System.assertEquals(true, response.success, 'Response should indicate success.');
         System.assertEquals('RETURN_ORDER_CREATED', response.status, 'Status should indicate creation.');
         System.assertEquals('RO-000123', response.returnOrderNumber, 'Return order number should come from flow.');
+        System.assertEquals('00001005', response.caseNumber, 'Case number should be surfaced from the flow.');
         System.assertEquals(
             '返品手続きが完了しました。返品注文番号は『RO-000123』です。この番号をお控えください。担当者が確認次第、メールにてご連絡いたします。',
             response.primaryMessage
@@ -45,6 +46,7 @@ private class ReturnOrderProcessingServiceTest {
         System.assertEquals(false, response.success, 'Failure should be reported.');
         System.assertEquals('RETURN_ORDER_FAILED', response.status, 'Status should indicate flow failure.');
         System.assertEquals(null, response.returnOrderNumber, 'Return order number should be empty.');
+        System.assertEquals(null, response.caseNumber, 'Case number should be empty when the flow fails.');
         System.assertEquals(
             'システムエラーにより返品手続きが完了しませんでした。お手数ですが、再度お試しください。',
             response.primaryMessage
@@ -228,7 +230,8 @@ private class ReturnOrderProcessingServiceTest {
             System.assertEquals('糸のほつれがありました', (String) inputs.get('ReturnReason'));
 
             return new Map<String, Object>{
-                'varReturnOrderNumber' => 'RO-000123'
+                'varReturnOrderNumber' => 'RO-000123',
+                'varCaseNumber' => '00001005'
             };
         }
 

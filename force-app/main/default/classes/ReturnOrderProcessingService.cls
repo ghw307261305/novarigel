@@ -30,12 +30,16 @@ public with sharing class ReturnOrderProcessingService {
         public String returnOrderNumber;
 
         @AuraEnabled
+        public String caseNumber;
+
+        @AuraEnabled
         public ReturnEligibilityService.EvaluationResult evaluation;
     }
 
     private class FlowOutcome {
         Boolean success = false;
         String returnOrderNumber;
+        String caseNumber;
         String errorMessage;
     }
 
@@ -47,13 +51,14 @@ public with sharing class ReturnOrderProcessingService {
 
         String normalizedOrderNumber = request.orderNumber != null ? request.orderNumber.trim() : null;
         String normalizedProductCode = request.productCode != null ? request.productCode.trim() : null;
+        String normalizedReturnReason = request.returnReason != null ? request.returnReason.trim() : null;
         Decimal quantity = request.quantity;
 
         validateInputs(normalizedOrderNumber, normalizedProductCode, quantity);
 
         ReturnEligibilityService.EvaluationResult evaluation = ReturnEligibilityService.evaluateProductReturn(
             normalizedProductCode,
-            request.returnReason
+            normalizedReturnReason
         );
 
         Response response = new Response();
@@ -80,19 +85,21 @@ public with sharing class ReturnOrderProcessingService {
             normalizedOrderNumber,
             normalizedProductCode,
             quantity,
-            request.returnReason
+            normalizedReturnReason
         );
 
         if (outcome.success) {
             response.success = true;
             response.status = 'RETURN_ORDER_CREATED';
             response.returnOrderNumber = outcome.returnOrderNumber;
+            response.caseNumber = outcome.caseNumber;
             response.primaryMessage = buildSuccessMessage(outcome.returnOrderNumber);
             response.secondaryMessage = null;
         } else {
             response.success = false;
             response.status = 'RETURN_ORDER_FAILED';
             response.returnOrderNumber = null;
+            response.caseNumber = null;
             response.primaryMessage = 'システムエラーにより返品手続きが完了しませんでした。お手数ですが、再度お試しください。';
             response.secondaryMessage = String.isBlank(outcome.errorMessage) ? null : outcome.errorMessage;
         }
@@ -136,6 +143,7 @@ public with sharing class ReturnOrderProcessingService {
             interview.start();
 
             outcome.returnOrderNumber = (String) interview.getVariableValue('varReturnOrderNumber');
+            outcome.caseNumber = (String) interview.getVariableValue('varCaseNumber');
             if (String.isBlank(outcome.returnOrderNumber)) {
                 outcome.success = false;
                 outcome.errorMessage = 'フローから返品注文番号が返されませんでした。';
