@@ -81,9 +81,15 @@ public with sharing class ReturnEligibilityService {
         @InvocableVariable
         public String status;
 
+        // ユーザーが選択可能な返品理由カテゴリ一覧です。
+        @AuraEnabled
+        @InvocableVariable
+        public List<String> availableReasonCategories;
+
         public EvaluationResult() {
             this.exchangeOptions = new List<ProductSuggestion>();
             this.alternativeProducts = new List<ProductSuggestion>();
+            this.availableReasonCategories = new List<String>();
         }
     }
 
@@ -210,9 +216,10 @@ public with sharing class ReturnEligibilityService {
         }
 
         if (String.isBlank(returnReason)) {
-            result.primaryMessage = '返品理由をお聞かせください。';
+            result.primaryMessage = '返品理由カテゴリを選択してください。';
             result.isReturnable = true;
             result.requiresReason = true;
+            result.availableReasonCategories = getAvailableReasonCategories();
             result.status = 'ASK_REASON';
             return result;
         }
@@ -327,6 +334,7 @@ public with sharing class ReturnEligibilityService {
             Set<ReturnReasonCategory> allowed = POLICY_REASON_MAP.get(key);
             return allowed != null && allowed.contains(category);
         }
+    }
 
         return false;
     }
@@ -356,6 +364,8 @@ public with sharing class ReturnEligibilityService {
         if (String.isBlank(rawValue)) {
             return null;
         }
+        return mapping;
+    }
 
         String trimmed = rawValue.trim();
         if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
