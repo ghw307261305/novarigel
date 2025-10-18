@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApexPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>58.0</apiVersion>
+    <availableInTouch>false</availableInTouch>
+    <confirmationTokenRequired>false</confirmationTokenRequired>
+    <description>NovaRigel_Returns_Agent_Channel 組み込みサービスリリースの [メッセージングのテスト] ページ</description>
+    <label>ESWNovaRigelReturnsAgen1759373508791</label>
+    <packageVersions>
+        <majorNumber>3</majorNumber>
+        <minorNumber>18</minorNumber>
+        <namespace>cdpactvstrgptnr</namespace>
+    </packageVersions>
+    <packageVersions>
+        <majorNumber>1</majorNumber>
+        <minorNumber>112</minorNumber>
+        <namespace>ssot</namespace>
+    </packageVersions>
+</ApexPage>

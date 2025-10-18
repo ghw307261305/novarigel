@@ -4,8 +4,8 @@
     <externalId>false</externalId>
     <fieldManageability>DeveloperControlled</fieldManageability>
     <label>Authorization Header Value</label>
-    <length>1024</length>
+    <length>255</length>
     <required>false</required>
-    <type>TextArea</type>
-    <visibleLines>3</visibleLines>
+    <type>Text</type>
+    <unique>false</unique>
 </CustomField>

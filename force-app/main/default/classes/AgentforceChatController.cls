@@ -273,6 +273,7 @@ public with sharing class AgentforceChatController {
       ? (String) payloadToSend.get('externalSessionKey')
       : null;
 
+    System.debug('Agentforce start session payload: ' + JSON.serialize(payloadToSend));
     request.setBody(JSON.serialize(payloadToSend));
 
     Http http = new Http();
@@ -284,6 +285,8 @@ public with sharing class AgentforceChatController {
         'Agentforce request failed: ' + ex.getMessage()
       );
     }
+
+    System.debug('Agentforce start session response: ' + response);
 
     if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
       AgentforceStartSessionResult result = new AgentforceStartSessionResult();
@@ -443,8 +446,7 @@ public with sharing class AgentforceChatController {
       try {
         instanceConfig.put(
           'endpoint',
-          URL.getSalesforceBaseUrl().toExternalForm()
-        );
+          'https://orgfarm-ba397eacea-dev-ed.develop.my.salesforce.com');
       } catch (Exception ex) {
         // If the base URL cannot be resolved we leave the endpoint unset.
       }
