@@ -129,9 +129,9 @@ public with sharing class ReturnEligibilityService {
 
     private static final Set<ReturnReasonCategory> ALL_REASON_CATEGORIES = new Set<ReturnReasonCategory>(ReturnReasonCategory.values());
 
-    private static final Map<ReturnReasonCategory, String> CATEGORY_LABELS = buildCategoryLabels();
+    private static final Map<ReturnReasonCategory, String> CATEGORY_LABELS = buildReasonCategoryLabels();
 
-    private static final Map<String, ReturnReasonCategory> LABEL_TO_CATEGORY = buildLabelToCategoryMap();
+    private static final Map<String, ReturnReasonCategory> LABEL_TO_CATEGORY = buildLabelToReasonCategoryMap();
 
     private static final Map<String, Set<ReturnReasonCategory>> POLICY_REASON_MAP = buildPolicyReasonMap();
 
@@ -225,7 +225,7 @@ public with sharing class ReturnEligibilityService {
         }
 
         String normalizedReason = returnReason != null ? returnReason.trim() : null;
-        ReturnReasonCategory category = parseReasonCategory(normalizedReason);
+        ReturnReasonCategory category = resolveReasonCategory(normalizedReason);
         if (category == null) {
             result.primaryMessage = '入力された返品理由を認識できません。もう一度ご入力ください。';
             result.requiresReason = true;
@@ -334,11 +334,12 @@ public with sharing class ReturnEligibilityService {
             Set<ReturnReasonCategory> allowed = POLICY_REASON_MAP.get(key);
             return allowed != null && allowed.contains(category);
         }
+    }
 
         return false;
     }
 
-    private static ReturnReasonCategory parseReasonCategory(String reasonValue) {
+    private static ReturnReasonCategory resolveReasonCategory(String reasonValue) {
         if (String.isBlank(reasonValue)) {
             return null;
         }
@@ -363,6 +364,8 @@ public with sharing class ReturnEligibilityService {
         if (String.isBlank(rawValue)) {
             return null;
         }
+        return mapping;
+    }
 
         String trimmed = rawValue.trim();
         if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
@@ -385,7 +388,7 @@ public with sharing class ReturnEligibilityService {
         return trimmed;
     }
 
-    private static Map<ReturnReasonCategory, String> buildCategoryLabels() {
+    private static Map<ReturnReasonCategory, String> buildReasonCategoryLabels() {
         Map<ReturnReasonCategory, String> labels = new Map<ReturnReasonCategory, String>();
         labels.put(ReturnReasonCategory.DEFECTIVE, '不良・破損');
         labels.put(ReturnReasonCategory.SIZE_FIT, 'サイズが合わない');
@@ -395,53 +398,7 @@ public with sharing class ReturnEligibilityService {
         return labels;
     }
 
-    private static Map<String, ReturnReasonCategory> buildLabelToCategoryMap() {
-        Map<String, ReturnReasonCategory> mapping = new Map<String, ReturnReasonCategory>();
-        for (ReturnReasonCategory category : ReturnReasonCategory.values()) {
-            String label = CATEGORY_LABELS.get(category);
-            if (!String.isBlank(label)) {
-                mapping.put(label, category);
-            }
-        }
-        return mapping;
-    }
-
-    private static ReturnReasonCategory parseReasonCategory(String reasonValue) {
-        if (String.isBlank(reasonValue)) {
-            return null;
-        }
-
-        String normalized = reasonValue.replace('-', '_').replace(' ', '_').toUpperCase();
-        try {
-            return ReturnReasonCategory.valueOf(normalized);
-        } catch (Exception ex) {
-            String trimmed = reasonValue.trim();
-            if (LABEL_TO_CATEGORY.containsKey(trimmed)) {
-                return LABEL_TO_CATEGORY.get(trimmed);
-            }
-            return null;
-        }
-    }
-
-    private static List<String> getAvailableReasonCategories() {
-        List<String> categories = new List<String>();
-        for (ReturnReasonCategory category : ReturnReasonCategory.values()) {
-            categories.add(CATEGORY_LABELS.get(category));
-        }
-        return categories;
-    }
-
-    private static Map<ReturnReasonCategory, String> buildCategoryLabels() {
-        Map<ReturnReasonCategory, String> labels = new Map<ReturnReasonCategory, String>();
-        labels.put(ReturnReasonCategory.DEFECTIVE, '不良・破損');
-        labels.put(ReturnReasonCategory.SIZE_FIT, 'サイズが合わない');
-        labels.put(ReturnReasonCategory.APPEARANCE, 'イメージと違う');
-        labels.put(ReturnReasonCategory.UNWANTED, '不要になった');
-        labels.put(ReturnReasonCategory.OTHER, 'その他');
-        return labels;
-    }
-
-    private static Map<String, ReturnReasonCategory> buildLabelToCategoryMap() {
+    private static Map<String, ReturnReasonCategory> buildLabelToReasonCategoryMap() {
         Map<String, ReturnReasonCategory> mapping = new Map<String, ReturnReasonCategory>();
         for (ReturnReasonCategory category : ReturnReasonCategory.values()) {
             String label = CATEGORY_LABELS.get(category);
