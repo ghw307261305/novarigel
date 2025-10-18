@@ -227,9 +227,8 @@ public with sharing class ReturnEligibilityService {
         String normalizedReason = returnReason != null ? returnReason.trim() : null;
         ReturnReasonCategory category = parseReasonCategory(normalizedReason);
         if (category == null) {
-            result.primaryMessage = '選択された返品カテゴリを認識できません。もう一度選択してください。';
+            result.primaryMessage = '入力された返品理由を認識できません。もう一度ご入力ください。';
             result.requiresReason = true;
-            result.availableReasonCategories = getAvailableReasonCategories();
             result.status = 'INVALID_REASON_CATEGORY';
             result.reasonCategory = normalizedReason;
             return result;
@@ -337,6 +336,74 @@ public with sharing class ReturnEligibilityService {
         }
 
         return false;
+    }
+
+    private static ReturnReasonCategory parseReasonCategory(String reasonValue) {
+        if (String.isBlank(reasonValue)) {
+            return null;
+        }
+
+        String candidate = extractCategoryToken(reasonValue);
+        if (String.isBlank(candidate)) {
+            return null;
+        }
+
+        String normalized = candidate.replace('-', '_').replace(' ', '_').toUpperCase();
+        try {
+            return ReturnReasonCategory.valueOf(normalized);
+        } catch (Exception ex) {
+            if (LABEL_TO_CATEGORY.containsKey(candidate)) {
+                return LABEL_TO_CATEGORY.get(candidate);
+            }
+            return null;
+        }
+    }
+
+    private static String extractCategoryToken(String rawValue) {
+        if (String.isBlank(rawValue)) {
+            return null;
+        }
+
+        String trimmed = rawValue.trim();
+        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            try {
+                Map<String, Object> payload = (Map<String, Object>)JSON.deserializeUntyped(trimmed);
+                if (payload != null) {
+                    Object categoryValue = payload.get('category');
+                    if (categoryValue instanceof String) {
+                        String categoryString = ((String)categoryValue).trim();
+                        if (!String.isBlank(categoryString)) {
+                            return categoryString;
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                // フォールバックとして JSON 文字列全体を後続の処理へ渡します。
+            }
+        }
+
+        return trimmed;
+    }
+
+    private static Map<ReturnReasonCategory, String> buildCategoryLabels() {
+        Map<ReturnReasonCategory, String> labels = new Map<ReturnReasonCategory, String>();
+        labels.put(ReturnReasonCategory.DEFECTIVE, '不良・破損');
+        labels.put(ReturnReasonCategory.SIZE_FIT, 'サイズが合わない');
+        labels.put(ReturnReasonCategory.APPEARANCE, 'イメージと違う');
+        labels.put(ReturnReasonCategory.UNWANTED, '不要になった');
+        labels.put(ReturnReasonCategory.OTHER, 'その他');
+        return labels;
+    }
+
+    private static Map<String, ReturnReasonCategory> buildLabelToCategoryMap() {
+        Map<String, ReturnReasonCategory> mapping = new Map<String, ReturnReasonCategory>();
+        for (ReturnReasonCategory category : ReturnReasonCategory.values()) {
+            String label = CATEGORY_LABELS.get(category);
+            if (!String.isBlank(label)) {
+                mapping.put(label, category);
+            }
+        }
+        return mapping;
     }
 
     private static ReturnReasonCategory parseReasonCategory(String reasonValue) {
