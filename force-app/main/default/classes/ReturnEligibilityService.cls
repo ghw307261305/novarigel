@@ -123,6 +123,10 @@ public with sharing class ReturnEligibilityService {
 
     private static final Set<ReturnReasonCategory> ALL_REASON_CATEGORIES = new Set<ReturnReasonCategory>(ReturnReasonCategory.values());
 
+    private static final Map<ReturnReasonCategory, String> CATEGORY_LABELS = buildReasonCategoryLabels();
+
+    private static final Map<String, ReturnReasonCategory> LABEL_TO_CATEGORY = buildLabelToReasonCategoryMap();
+
     private static final Map<String, Set<ReturnReasonCategory>> POLICY_REASON_MAP = buildPolicyReasonMap();
 
     @AuraEnabled
@@ -213,10 +217,18 @@ public with sharing class ReturnEligibilityService {
             return result;
         }
 
-        ReturnReasonCategory category = categorizeReason(returnReason);
-        result.reasonCategory = category != null ? category.name() : null;
+        String normalizedReason = returnReason != null ? returnReason.trim() : null;
+        ReturnReasonCategory category = resolveReasonCategory(normalizedReason);
+        if (category == null) {
+            result.primaryMessage = '入力された返品理由を認識できません。もう一度ご入力ください。';
+            result.requiresReason = true;
+            result.status = 'INVALID_REASON_CATEGORY';
+            result.reasonCategory = normalizedReason;
+            return result;
+        }
+        result.reasonCategory = CATEGORY_LABELS.get(category);
 
-        Boolean reasonMatchesPolicy = category != null && isReasonAllowedByPolicy(policy.PolicyType__c, category);
+        Boolean reasonMatchesPolicy = isReasonAllowedByPolicy(policy.PolicyType__c, category);
         if (reasonMatchesPolicy) {
             result.isReturnable = true;
             result.reasonAccepted = true;
@@ -301,39 +313,6 @@ public with sharing class ReturnEligibilityService {
         return true;
     }
 
-    private static ReturnReasonCategory categorizeReason(String reason) {
-        if (String.isBlank(reason)) {
-            return null;
-        }
-
-        String normalized = reason.toLowerCase();
-        if (normalized.contains('ほつれ') || normalized.contains('破れ') || normalized.contains('壊れ') ||
-            normalized.contains('不良') || normalized.contains('欠陥') || normalized.contains('fault') ||
-            normalized.contains('damage') || normalized.contains('damaged') || normalized.contains('defect')) {
-            return ReturnReasonCategory.DEFECTIVE;
-        }
-
-        if (normalized.contains('サイズ') || normalized.contains('大き') || normalized.contains('小さ') ||
-            normalized.contains('fit') || normalized.contains('きつ') || normalized.contains('ゆる') ||
-            normalized.contains('丈が') || normalized.contains('幅が')) {
-            return ReturnReasonCategory.SIZE_FIT;
-        }
-
-        if (normalized.contains('イメージ') || normalized.contains('色が') || normalized.contains('色違い') ||
-            normalized.contains('デザイン') || normalized.contains('思っていた') || normalized.contains('見た目') ||
-            normalized.contains('color')) {
-            return ReturnReasonCategory.APPEARANCE;
-        }
-
-        if (normalized.contains('不要') || normalized.contains('使わない') || normalized.contains('要らなく') ||
-            normalized.contains('間違って') || normalized.contains('キャンセル') || normalized.contains('気が変わった') ||
-            normalized.contains('不要になった') || normalized.contains('不要になりまし') || normalized.contains('不要です')) {
-            return ReturnReasonCategory.UNWANTED;
-        }
-
-        return ReturnReasonCategory.OTHER;
-    }
-
     private static Boolean isReasonAllowedByPolicy(String policyType, ReturnReasonCategory category) {
         if (category == null) {
             return false;
@@ -350,6 +329,74 @@ public with sharing class ReturnEligibilityService {
         }
 
         return false;
+    }
+
+    private static ReturnReasonCategory resolveReasonCategory(String reasonValue) {
+        if (String.isBlank(reasonValue)) {
+            return null;
+        }
+
+        String candidate = extractCategoryToken(reasonValue);
+        if (String.isBlank(candidate)) {
+            return null;
+        }
+
+        String normalized = candidate.replace('-', '_').replace(' ', '_').toUpperCase();
+        try {
+            return ReturnReasonCategory.valueOf(normalized);
+        } catch (Exception ex) {
+            if (LABEL_TO_CATEGORY.containsKey(candidate)) {
+                return LABEL_TO_CATEGORY.get(candidate);
+            }
+            return null;
+        }
+    }
+
+    private static String extractCategoryToken(String rawValue) {
+        if (String.isBlank(rawValue)) {
+            return null;
+        }
+
+        String trimmed = rawValue.trim();
+        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            try {
+                Map<String, Object> payload = (Map<String, Object>)JSON.deserializeUntyped(trimmed);
+                if (payload != null) {
+                    Object categoryValue = payload.get('category');
+                    if (categoryValue instanceof String) {
+                        String categoryString = ((String)categoryValue).trim();
+                        if (!String.isBlank(categoryString)) {
+                            return categoryString;
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                // フォールバックとして JSON 文字列全体を後続の処理へ渡します。
+            }
+        }
+
+        return trimmed;
+    }
+
+    private static Map<ReturnReasonCategory, String> buildReasonCategoryLabels() {
+        Map<ReturnReasonCategory, String> labels = new Map<ReturnReasonCategory, String>();
+        labels.put(ReturnReasonCategory.DEFECTIVE, '不良・破損');
+        labels.put(ReturnReasonCategory.SIZE_FIT, 'サイズが合わない');
+        labels.put(ReturnReasonCategory.APPEARANCE, 'イメージと違う');
+        labels.put(ReturnReasonCategory.UNWANTED, '不要になった');
+        labels.put(ReturnReasonCategory.OTHER, 'その他');
+        return labels;
+    }
+
+    private static Map<String, ReturnReasonCategory> buildLabelToReasonCategoryMap() {
+        Map<String, ReturnReasonCategory> mapping = new Map<String, ReturnReasonCategory>();
+        for (ReturnReasonCategory category : ReturnReasonCategory.values()) {
+            String label = CATEGORY_LABELS.get(category);
+            if (!String.isBlank(label)) {
+                mapping.put(label, category);
+            }
+        }
+        return mapping;
     }
 
     private static Map<String, Set<ReturnReasonCategory>> buildPolicyReasonMap() {
