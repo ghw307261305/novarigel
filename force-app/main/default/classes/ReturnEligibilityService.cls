@@ -7,7 +7,6 @@ public with sharing class ReturnEligibilityService {
         public String returnReason;
     }
 
-    @AuraEnabled
     public class EvaluationResult {
         @AuraEnabled
         @InvocableVariable
@@ -73,7 +72,6 @@ public with sharing class ReturnEligibilityService {
         }
     }
 
-    @AuraEnabled
     public class ProductSuggestion {
         @AuraEnabled
         public Id productId;
@@ -224,7 +222,7 @@ public with sharing class ReturnEligibilityService {
 
     private static Product2 findProduct(String productIdentifier) {
         List<Product2> matches = [
-            SELECT Id, Name, ProductCode, Family, Description, ParentId, IsActive
+            SELECT Id, Name, ProductCode, Family, Description, IsActive
             FROM Product2
             WHERE (ProductCode = :productIdentifier OR Name = :productIdentifier)
             AND IsActive = true
@@ -236,7 +234,7 @@ public with sharing class ReturnEligibilityService {
         }
 
         matches = [
-            SELECT Id, Name, ProductCode, Family, Description, ParentId, IsActive
+            SELECT Id, Name, ProductCode, Family, Description, IsActive
             FROM Product2
             WHERE (ProductCode LIKE :('%' + productIdentifier + '%') OR Name LIKE :('%' + productIdentifier + '%'))
             AND IsActive = true
@@ -353,26 +351,51 @@ public with sharing class ReturnEligibilityService {
             return new List<ProductSuggestion>();
         }
 
-        Set<Id> parentIds = new Set<Id>();
-        if (product.ParentId != null) {
-            parentIds.add(product.ParentId);
-        } else {
-            parentIds.add(product.Id);
+        String family = product.Family;
+        String baseName = product.Name;
+        String baseCode = product.ProductCode;
+
+        String normalizedName = null;
+        if (!String.isBlank(baseName)) {
+            Integer hyphenIndex = baseName.indexOf('-');
+            if (hyphenIndex > 0) {
+                normalizedName = baseName.substring(0, hyphenIndex).trim();
+            } else {
+                normalizedName = baseName.trim();
+            }
+        }
+        String namePattern = normalizedName != null ? '%' + normalizedName + '%' : null;
+        String codePattern = !String.isBlank(baseCode) ? baseCode + '%' : null;
+
+        List<Product2> variationCandidates = new List<Product2>();
+        if (!String.isBlank(family)) {
+            variationCandidates = [
+                SELECT Id, Name, ProductCode, Family, Description
+                FROM Product2
+                WHERE IsActive = true
+                  AND Id != :product.Id
+                  AND Family = :family
+                  AND (
+                        (:namePattern != null AND Name LIKE :namePattern)
+                     OR (:codePattern != null AND ProductCode LIKE :codePattern)
+                     OR (:namePattern = null AND :codePattern = null)
+                  )
+                ORDER BY CreatedDate DESC
+                LIMIT 5
+            ];
         }
 
-        List<Product2> variationCandidates = [
-            SELECT Id, Name, ProductCode, Family, Description
-            FROM Product2
-            WHERE IsActive = true
-              AND Id != :product.Id
-              AND (
-                    ParentId IN :parentIds
-                 OR ParentId = :product.Id
-                 OR Id IN :parentIds
-              )
-            ORDER BY CreatedDate DESC
-            LIMIT 5
-        ];
+        if (variationCandidates.isEmpty() && !String.isBlank(normalizedName)) {
+            variationCandidates = [
+                SELECT Id, Name, ProductCode, Family, Description
+                FROM Product2
+                WHERE IsActive = true
+                  AND Id != :product.Id
+                  AND Name LIKE :namePattern
+                ORDER BY CreatedDate DESC
+                LIMIT 5
+            ];
+        }
 
         List<ProductSuggestion> suggestions = new List<ProductSuggestion>();
         for (Product2 variation : variationCandidates) {

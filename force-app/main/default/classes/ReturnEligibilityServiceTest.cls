@@ -162,8 +162,7 @@ private class ReturnEligibilityServiceTest {
                     Name = 'Nova Knit Cardigan - Blue',
                     ProductCode = 'NKC-001-BL',
                     Family = 'Apparel',
-                    IsActive = true,
-                    ParentId = baseProduct.Id
+                    IsActive = true
                 );
                 insert variation;
 
