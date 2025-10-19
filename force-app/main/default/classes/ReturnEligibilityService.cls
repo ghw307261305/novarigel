@@ -1,637 +1,879 @@
 /**
- * @description       : 
+ * @description       :
  * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
- * @group             : 
+ * @group             :
  * @last modified on  : 10-18-2025
  * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
-**/
+ **/
 public with sharing class ReturnEligibilityService {
-    public class EvaluationInput {
-        @InvocableVariable(required=true)
-        public String productIdentifier;
+  public class EvaluationInput {
+    @InvocableVariable(required=true)
+    public String productIdentifier;
 
-        @InvocableVariable
-        public String returnReason;
-    }
+    @InvocableVariable
+    public String returnReason;
+  }
 
-    public class EvaluationResult {
-        // 提供された識別子に一致する商品が見つかったかどうかを示します。
-        @AuraEnabled
-        @InvocableVariable
-        public Boolean productFound;
-
-        // 続行前に顧客へ返品理由の確認が必要かどうかを示します。
-        @AuraEnabled
-        @InvocableVariable
-        public Boolean requiresReason;
-
-        // 設定されたポリシーの下で現在返品可能かどうかを表します。
-        @AuraEnabled
-        @InvocableVariable
-        public Boolean isReturnable;
-
-        // 入力された返品理由がポリシー条件を満たしているかを記録します。
-        @AuraEnabled
-        @InvocableVariable
-        public Boolean reasonAccepted;
-
-        // 顧客の自由入力から判定した返品理由カテゴリを保持します。
-        @AuraEnabled
-        @InvocableVariable
-        public String reasonCategory;
-
-        // 本商品の返品対応に適用された店舗ポリシー名です。
-        @AuraEnabled
-        @InvocableVariable
-        public String policyName;
-
-        // 適用されたポリシーの種別（標準・キャンペーンなど）を示します。
-        @AuraEnabled
-        @InvocableVariable
-        public String policyType;
-
-        // 今回適用した返品ポリシーの説明文です。
-        @AuraEnabled
-        @InvocableVariable
-        public String policyDescription;
-
-        // 評価結果に応じて顧客へ伝えるメインメッセージです。
-        @AuraEnabled
-        @InvocableVariable
-        public String primaryMessage;
-
-        // メインメッセージを補足する追記・案内メッセージです。
-        @AuraEnabled
-        @InvocableVariable
-        public String secondaryMessage;
-
-        // 交換対応が可能な場合に提示する案内メッセージです。
-        @AuraEnabled
-        @InvocableVariable
-        public String exchangeMessage;
-
-        // 在庫があり交換候補となる関連バリエーションの一覧です。
-        @AuraEnabled
-        public List<ProductSuggestion> exchangeOptions;
-
-        // 類似特性や価格帯を持つ代替商品の推奨リストです。
-        @AuraEnabled
-        public List<ProductSuggestion> alternativeProducts;
-
-        // 提案した代替商品をまとめて案内するメッセージです。
-        @AuraEnabled
-        @InvocableVariable
-        public String alternativeMessage;
-
-        // 評価処理の状態（未解決・理由待ち・承認・却下など）を表します。
-        @AuraEnabled
-        @InvocableVariable
-        public String status;
-
-        // ユーザーが選択可能な返品理由カテゴリ一覧です。
-        @AuraEnabled
-        @InvocableVariable
-        public List<String> availableReasonCategories;
-
-        public EvaluationResult() {
-            this.exchangeOptions = new List<ProductSuggestion>();
-            this.alternativeProducts = new List<ProductSuggestion>();
-            this.availableReasonCategories = new List<String>();
-        }
-    }
-
-    public class ProductSuggestion {
-        // 推奨商品のIDで、後続処理（発送指示など）で利用します。
-        @AuraEnabled
-        public Id productId;
-
-        // 推奨商品の表示名です。
-        @AuraEnabled
-        public String name;
-
-        // 推奨商品の商品コード／SKUです。
-        @AuraEnabled
-        public String productCode;
-
-        // 価格比較に用いる現在の単価です。
-        @AuraEnabled
-        public Decimal unitPrice;
-
-        // 商品カテゴリの把握に役立つ製品ファミリー名です。
-        @AuraEnabled
-        public String family;
-
-        // 推奨商品の補足説明です。
-        @AuraEnabled
-        public String description;
-    }
-
-    private enum ReturnReasonCategory {
-        DEFECTIVE,
-        SIZE_FIT,
-        APPEARANCE,
-        UNWANTED,
-        OTHER
-    }
-
-    private static final Set<ReturnReasonCategory> ALL_REASON_CATEGORIES = new Set<ReturnReasonCategory>(ReturnReasonCategory.values());
-
-    private static final Map<ReturnReasonCategory, String> CATEGORY_LABELS = buildReasonCategoryLabels();
-
-    private static final Map<String, ReturnReasonCategory> LABEL_TO_CATEGORY = buildLabelToReasonCategoryMap();
-
-    private static final Map<String, Set<ReturnReasonCategory>> POLICY_REASON_MAP = buildPolicyReasonMap();
-
+  public class EvaluationResult {
+    // 提供された識別子に一致する商品が見つかったかどうかを示します。
     @AuraEnabled
-    public static EvaluationResult evaluateProductReturn(String productIdentifier, String returnReason) {
-        return handleEvaluation(productIdentifier, returnReason);
+    @InvocableVariable
+    public Boolean productFound;
+
+    // 続行前に顧客へ返品理由の確認が必要かどうかを示します。
+    @AuraEnabled
+    @InvocableVariable
+    public Boolean requiresReason;
+
+    // 設定されたポリシーの下で現在返品可能かどうかを表します。
+    @AuraEnabled
+    @InvocableVariable
+    public Boolean isReturnable;
+
+    // 入力された返品理由がポリシー条件を満たしているかを記録します。
+    @AuraEnabled
+    @InvocableVariable
+    public Boolean reasonAccepted;
+
+    // 顧客の自由入力から判定した返品理由カテゴリを保持します。
+    @AuraEnabled
+    @InvocableVariable
+    public String reasonCategory;
+
+    // 本商品の返品対応に適用された店舗ポリシー名です。
+    @AuraEnabled
+    @InvocableVariable
+    public String policyName;
+
+    // 適用されたポリシーの種別（標準・キャンペーンなど）を示します。
+    @AuraEnabled
+    @InvocableVariable
+    public String policyType;
+
+    // 今回適用した返品ポリシーの説明文です。
+    @AuraEnabled
+    @InvocableVariable
+    public String policyDescription;
+
+    // 評価結果に応じて顧客へ伝えるメインメッセージです。
+    @AuraEnabled
+    @InvocableVariable
+    public String primaryMessage;
+
+    // メインメッセージを補足する追記・案内メッセージです。
+    @AuraEnabled
+    @InvocableVariable
+    public String secondaryMessage;
+
+    // 交換対応が可能な場合に提示する案内メッセージです。
+    @AuraEnabled
+    @InvocableVariable
+    public String exchangeMessage;
+
+    // 在庫があり交換候補となる関連バリエーションの一覧です。
+    @AuraEnabled
+    public List<ProductSuggestion> exchangeOptions;
+
+    // 類似特性や価格帯を持つ代替商品の推奨リストです。
+    @AuraEnabled
+    public List<ProductSuggestion> alternativeProducts;
+
+    // 提案した代替商品をまとめて案内するメッセージです。
+    @AuraEnabled
+    @InvocableVariable
+    public String alternativeMessage;
+
+    // 評価処理の状態（未解決・理由待ち・承認・却下など）を表します。
+    @AuraEnabled
+    @InvocableVariable
+    public String status;
+
+    // ユーザーが選択可能な返品理由カテゴリ一覧です。
+    @AuraEnabled
+    @InvocableVariable
+    public List<String> availableReasonCategories;
+
+    public EvaluationResult() {
+      this.exchangeOptions = new List<ProductSuggestion>();
+      this.alternativeProducts = new List<ProductSuggestion>();
+      this.availableReasonCategories = new List<String>();
+    }
+  }
+
+  public class ProductSuggestion {
+    // 推奨商品のIDで、後続処理（発送指示など）で利用します。
+    @AuraEnabled
+    public Id productId;
+
+    // 推奨商品の表示名です。
+    @AuraEnabled
+    public String name;
+
+    // 推奨商品の商品コード／SKUです。
+    @AuraEnabled
+    public String productCode;
+
+    // 価格比較に用いる現在の単価です。
+    @AuraEnabled
+    public Decimal unitPrice;
+
+    // 商品カテゴリの把握に役立つ製品ファミリー名です。
+    @AuraEnabled
+    public String family;
+
+    // 推奨商品の補足説明です。
+    @AuraEnabled
+    public String description;
+  }
+
+  private enum ReturnReasonCategory {
+    DEFECTIVE,
+    SIZE_FIT,
+    APPEARANCE,
+    UNWANTED,
+    OTHER
+  }
+
+  private static final Set<ReturnReasonCategory> ALL_REASON_CATEGORIES = new Set<ReturnReasonCategory>(
+    ReturnReasonCategory.values()
+  );
+
+  private static final Map<ReturnReasonCategory, String> CATEGORY_LABELS = buildReasonCategoryLabels();
+
+  private static final Map<String, ReturnReasonCategory> LABEL_TO_CATEGORY = buildLabelToReasonCategoryMap();
+
+  private static final Map<String, Set<ReturnReasonCategory>> POLICY_REASON_MAP = buildPolicyReasonMap();
+
+  @AuraEnabled
+  public static EvaluationResult evaluateProductReturn(
+    String productIdentifier,
+    String returnReason
+  ) {
+    return handleEvaluation(productIdentifier, returnReason);
+  }
+
+  @InvocableMethod(
+    label='返品ポリシー判定'
+    description='商品名または商品コードと返品理由に基づいて返品可否を判定し、適切なガイダンスを返します。'
+  )
+  public static List<EvaluationResult> evaluate(List<EvaluationInput> inputs) {
+    List<EvaluationResult> results = new List<EvaluationResult>();
+    for (EvaluationInput input : inputs) {
+      results.add(
+        handleEvaluation(
+          input != null ? input.productIdentifier : null,
+          input != null ? input.returnReason : null
+        )
+      );
+    }
+    return results;
+  }
+
+  private class EvaluationContext {
+    String productIdentifier;
+    String returnReason;
+    Product2 product;
+    StorePolicyProduct__c policyProduct;
+    StorePolicy__c policy;
+    ReturnReasonCategory reasonCategory;
+  }
+
+  private static EvaluationResult handleEvaluation(
+    String productIdentifier,
+    String returnReason
+  ) {
+    EvaluationContext context = buildContext(productIdentifier, returnReason);
+    EvaluationResult result = initializeResult();
+
+    if (!validateIdentifier(context, result)) {
+      return result;
     }
 
-    @InvocableMethod(label='返品ポリシー判定' description='商品名または商品コードと返品理由に基づいて返品可否を判定し、適切なガイダンスを返します。')
-    public static List<EvaluationResult> evaluate(List<EvaluationInput> inputs) {
-        List<EvaluationResult> results = new List<EvaluationResult>();
-        for (EvaluationInput input : inputs) {
-            results.add(handleEvaluation(input != null ? input.productIdentifier : null,
-                                         input != null ? input.returnReason : null));
-        }
-        return results;
+    if (!resolveProduct(context, result)) {
+      return result;
     }
 
-    private static EvaluationResult handleEvaluation(String productIdentifier, String returnReason) {
-        EvaluationResult result = new EvaluationResult();
-        result.productFound = false;
-        result.isReturnable = false;
-        result.reasonAccepted = false;
-        result.requiresReason = false;
-        result.status = 'UNRESOLVED';
+    if (!resolvePolicy(context, result)) {
+      return result;
+    }
 
-        String trimmedIdentifier = productIdentifier != null ? productIdentifier.trim() : null;
-        if (String.isBlank(trimmedIdentifier)) {
-            result.primaryMessage = '商品名または商品コードを入力してください。';
-            result.status = 'MISSING_IDENTIFIER';
-            return result;
-        }
+    if (!validatePolicyAllowsReturn(context, result)) {
+      return result;
+    }
 
-        Product2 product = findProduct(trimmedIdentifier);
-        if (product == null) {
-            result.primaryMessage = '該当する商品が見つかりませんでした。商品名または商品コードをご確認ください。';
-            result.status = 'PRODUCT_NOT_FOUND';
-            return result;
-        }
+    if (!ensureReasonProvided(context, result)) {
+      return result;
+    }
 
-        result.productFound = true;
+    if (!assignReasonCategory(context, result)) {
+      return result;
+    }
 
-        StorePolicyProduct__c policyProduct = findPolicyForProduct(product.Id);
-        if (policyProduct == null || policyProduct.StorePolicy__r == null) {
-            result.primaryMessage = '申し訳ございません。この商品の返品ポリシー情報が見つかりませんでした。';
-            result.secondaryMessage = '代わりに交換はいかがでしょうか？';
-            result.exchangeOptions = findExchangeOptions(product);
-            if (!result.exchangeOptions.isEmpty()) {
-                result.exchangeMessage = '在庫がございます。サイズ／色違いの商品をお送りできますが、よろしいでしょうか？';
-            } else {
-                result.exchangeMessage = '申し訳ございません。現在交換用の在庫がございませんが、似たタイプの別商品をおすすめできます。';
-                result.alternativeProducts = findAlternativeProducts(product, null);
-                if (!result.alternativeProducts.isEmpty()) {
-                    result.alternativeMessage = buildAlternativesMessage(result.alternativeProducts);
-                }
+    if (!validateReasonAgainstPolicy(context, result)) {
+      return result;
+    }
+
+    markReturnApproved(result);
+    return result;
+  }
+
+  private static EvaluationContext buildContext(
+    String productIdentifier,
+    String returnReason
+  ) {
+    EvaluationContext context = new EvaluationContext();
+    context.productIdentifier = productIdentifier != null
+      ? productIdentifier.trim()
+      : null;
+    context.returnReason = returnReason != null ? returnReason.trim() : null;
+    return context;
+  }
+
+  private static EvaluationResult initializeResult() {
+    EvaluationResult result = new EvaluationResult();
+    result.productFound = false;
+    result.isReturnable = false;
+    result.reasonAccepted = false;
+    result.requiresReason = false;
+    result.status = 'UNRESOLVED';
+    return result;
+  }
+
+  private static Boolean validateIdentifier(
+    EvaluationContext context,
+    EvaluationResult result
+  ) {
+    if (String.isBlank(context.productIdentifier)) {
+      result.primaryMessage = '商品名または商品コードを入力してください。';
+      result.status = 'MISSING_IDENTIFIER';
+      return false;
+    }
+    return true;
+  }
+
+  private static Boolean resolveProduct(
+    EvaluationContext context,
+    EvaluationResult result
+  ) {
+    context.product = findProduct(context.productIdentifier);
+    if (context.product == null) {
+      result.primaryMessage = '該当する商品が見つかりませんでした。商品名または商品コードをご確認ください。';
+      result.status = 'PRODUCT_NOT_FOUND';
+      return false;
+    }
+
+    result.productFound = true;
+    return true;
+  }
+
+  private static Boolean resolvePolicy(
+    EvaluationContext context,
+    EvaluationResult result
+  ) {
+    context.policyProduct = findPolicyForProduct(context.product.Id);
+    if (
+      context.policyProduct == null ||
+      context.policyProduct.StorePolicy__r == null
+    ) {
+      applyPolicyNotFoundState(result, context.product);
+      return false;
+    }
+
+    context.policy = context.policyProduct.StorePolicy__r;
+    result.policyName = context.policy.Name;
+    result.policyType = context.policy.PolicyType__c;
+    result.policyDescription = context.policy.Description__c;
+    return true;
+  }
+
+  private static Boolean validatePolicyAllowsReturn(
+    EvaluationContext context,
+    EvaluationResult result
+  ) {
+    if (
+      isPolicyCurrentlyAllowingReturn(context.policyProduct, context.policy)
+    ) {
+      return true;
+    }
+
+    applyReturnNotAllowedState(
+      result,
+      context.product,
+      getProductUnitPrice(context.product)
+    );
+    result.status = 'RETURN_NOT_ALLOWED';
+    return false;
+  }
+
+  private static Boolean ensureReasonProvided(
+    EvaluationContext context,
+    EvaluationResult result
+  ) {
+    if (!String.isBlank(context.returnReason)) {
+      return true;
+    }
+
+    result.primaryMessage = '返品理由をお聞かせください。';
+    result.isReturnable = true;
+    result.requiresReason = true;
+    result.status = 'ASK_REASON';
+    return false;
+  }
+
+  private static Boolean assignReasonCategory(
+    EvaluationContext context,
+    EvaluationResult result
+  ) {
+    context.reasonCategory = resolveReasonCategory(context.returnReason);
+    if (context.reasonCategory == null) {
+      result.primaryMessage = '入力された返品理由を認識できません。もう一度ご入力ください。';
+      result.requiresReason = true;
+      result.status = 'INVALID_REASON_CATEGORY';
+      result.reasonCategory = context.returnReason;
+      return false;
+    }
+
+    result.reasonCategory = CATEGORY_LABELS.get(context.reasonCategory);
+    return true;
+  }
+
+  private static Boolean validateReasonAgainstPolicy(
+    EvaluationContext context,
+    EvaluationResult result
+  ) {
+    if (
+      isReasonAllowedByPolicy(
+        context.policy != null ? context.policy.PolicyType__c : null,
+        context.reasonCategory
+      )
+    ) {
+      return true;
+    }
+
+    applyReturnNotAllowedState(
+      result,
+      context.product,
+      getProductUnitPrice(context.product)
+    );
+    result.status = 'RETURN_REJECTED_REASON';
+    return false;
+  }
+
+  private static void markReturnApproved(EvaluationResult result) {
+    result.isReturnable = true;
+    result.reasonAccepted = true;
+    result.primaryMessage = 'ご迷惑をおかけし、誠に申し訳ございません。すぐに新しい商品をお送りいたしますが、よろしいでしょうか？';
+    result.status = 'RETURN_APPROVED';
+  }
+
+  private static void applyPolicyNotFoundState(
+    EvaluationResult result,
+    Product2 product
+  ) {
+    result.primaryMessage = '申し訳ございません。この商品の返品ポリシー情報が見つかりませんでした。';
+    result.secondaryMessage = '代わりに交換はいかがでしょうか？';
+    populateExchangeOptions(result, product, null);
+    result.status = 'POLICY_NOT_FOUND';
+  }
+
+  private static void applyReturnNotAllowedState(
+    EvaluationResult result,
+    Product2 product,
+    Decimal basePrice
+  ) {
+    result.primaryMessage = '申し訳ございませんが、この商品の返品はポリシーによりお受けできません。';
+    result.secondaryMessage = '代わりに交換はいかがでしょうか？';
+    populateExchangeOptions(result, product, basePrice);
+  }
+
+  private static void populateExchangeOptions(
+    EvaluationResult result,
+    Product2 product,
+    Decimal basePrice
+  ) {
+    result.exchangeOptions = findExchangeOptions(product);
+    if (!result.exchangeOptions.isEmpty()) {
+      result.exchangeMessage = '在庫がございます。サイズ／色違いの商品をお送りできますが、よろしいでしょうか？';
+      if (result.alternativeProducts == null) {
+        result.alternativeProducts = new List<ProductSuggestion>();
+      } else {
+        result.alternativeProducts.clear();
+      }
+      result.alternativeMessage = null;
+      return;
+    }
+
+    result.exchangeMessage = '申し訳ございません。現在交換用の在庫がございませんが、似たタイプの別商品をおすすめできます。';
+    result.alternativeProducts = findAlternativeProducts(product, basePrice);
+    if (!result.alternativeProducts.isEmpty()) {
+      result.alternativeMessage = buildAlternativesMessage(
+        result.alternativeProducts
+      );
+    } else {
+      result.alternativeMessage = null;
+    }
+  }
+
+  private static Product2 findProduct(String productIdentifier) {
+    List<Product2> matches = [
+      SELECT Id, Name, ProductCode, Family, Description, IsActive
+      FROM Product2
+      WHERE
+        (ProductCode = :productIdentifier
+        OR Name = :productIdentifier)
+        AND IsActive = TRUE
+      LIMIT 1
+    ];
+
+    if (!matches.isEmpty()) {
+      return matches[0];
+    }
+
+    matches = [
+      SELECT Id, Name, ProductCode, Family, Description, IsActive
+      FROM Product2
+      WHERE
+        (ProductCode LIKE :('%' + productIdentifier + '%')
+        OR Name LIKE :('%' + productIdentifier + '%'))
+        AND IsActive = TRUE
+      ORDER BY CreatedDate DESC
+      LIMIT 1
+    ];
+
+    return matches.isEmpty() ? null : matches[0];
+  }
+
+  private static StorePolicyProduct__c findPolicyForProduct(Id productId) {
+    List<StorePolicyProduct__c> policies = [
+      SELECT
+        Id,
+        Product__c,
+        StorePolicy__c,
+        IsActive__c,
+        Remarks__c,
+        StorePolicy__r.Id,
+        StorePolicy__r.Name,
+        StorePolicy__r.PolicyType__c,
+        StorePolicy__r.IsActive__c,
+        StorePolicy__r.ValidFrom__c,
+        StorePolicy__r.ValidTo__c,
+        StorePolicy__r.Description__c
+      FROM StorePolicyProduct__c
+      WHERE Product__c = :productId
+      LIMIT 1
+    ];
+    return policies.isEmpty() ? null : policies[0];
+  }
+
+  private static Boolean isPolicyCurrentlyAllowingReturn(
+    StorePolicyProduct__c policyProduct,
+    StorePolicy__c policy
+  ) {
+    if (policyProduct == null || policy == null) {
+      return false;
+    }
+
+    if (!(policyProduct.IsActive__c == true && policy.IsActive__c == true)) {
+      return false;
+    }
+
+    Date today = System.today();
+    if (
+      (policy.ValidFrom__c != null && policy.ValidFrom__c > today) ||
+      (policy.ValidTo__c != null &&
+      policy.ValidTo__c < today)
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private static Boolean isReasonAllowedByPolicy(
+    String policyType,
+    ReturnReasonCategory category
+  ) {
+    if (category == null) {
+      return false;
+    }
+
+    if (String.isBlank(policyType)) {
+      return category != ReturnReasonCategory.OTHER;
+    }
+
+    String key = policyType.trim().toUpperCase();
+    if (POLICY_REASON_MAP.containsKey(key)) {
+      Set<ReturnReasonCategory> allowed = POLICY_REASON_MAP.get(key);
+      return allowed != null && allowed.contains(category);
+    }
+
+    return false;
+  }
+
+  private static ReturnReasonCategory resolveReasonCategory(
+    String reasonValue
+  ) {
+    if (String.isBlank(reasonValue)) {
+      return null;
+    }
+
+    String candidate = extractCategoryToken(reasonValue);
+    if (String.isBlank(candidate)) {
+      return null;
+    }
+
+    String normalized = candidate.replace('-', '_')
+      .replace(' ', '_')
+      .toUpperCase();
+    try {
+      return ReturnReasonCategory.valueOf(normalized);
+    } catch (Exception ex) {
+      if (LABEL_TO_CATEGORY.containsKey(candidate)) {
+        return LABEL_TO_CATEGORY.get(candidate);
+      }
+      return null;
+    }
+  }
+
+  private static String extractCategoryToken(String rawValue) {
+    if (String.isBlank(rawValue)) {
+      return null;
+    }
+
+    String trimmed = rawValue.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(
+          trimmed
+        );
+        if (payload != null) {
+          Object categoryValue = payload.get('category');
+          if (categoryValue instanceof String) {
+            String categoryString = ((String) categoryValue).trim();
+            if (!String.isBlank(categoryString)) {
+              return categoryString;
             }
-            result.status = 'POLICY_NOT_FOUND';
-            return result;
+          }
         }
-
-        StorePolicy__c policy = policyProduct.StorePolicy__r;
-        result.policyName = policy.Name;
-        result.policyType = policy.PolicyType__c;
-        result.policyDescription = policy.Description__c;
-
-        Boolean policyAllowsReturn = isPolicyCurrentlyAllowingReturn(policyProduct, policy);
-        if (!policyAllowsReturn) {
-            result.primaryMessage = '申し訳ございませんが、この商品の返品はポリシーによりお受けできません。';
-            result.secondaryMessage = '代わりに交換はいかがでしょうか？';
-            result.exchangeOptions = findExchangeOptions(product);
-            if (!result.exchangeOptions.isEmpty()) {
-                result.exchangeMessage = '在庫がございます。サイズ／色違いの商品をお送りできますが、よろしいでしょうか？';
-            } else {
-                result.exchangeMessage = '申し訳ございません。現在交換用の在庫がございませんが、似たタイプの別商品をおすすめできます。';
-                result.alternativeProducts = findAlternativeProducts(product, getProductUnitPrice(product));
-                if (!result.alternativeProducts.isEmpty()) {
-                    result.alternativeMessage = buildAlternativesMessage(result.alternativeProducts);
-                }
-            }
-            result.status = 'RETURN_NOT_ALLOWED';
-            return result;
-        }
-
-        if (String.isBlank(returnReason)) {
-            result.primaryMessage = '返品理由をお聞かせください。';
-            result.isReturnable = true;
-            result.requiresReason = true;
-            result.status = 'ASK_REASON';
-            return result;
-        }
-
-        String normalizedReason = returnReason != null ? returnReason.trim() : null;
-        ReturnReasonCategory category = resolveReasonCategory(normalizedReason);
-        if (category == null) {
-            result.primaryMessage = '入力された返品理由を認識できません。もう一度ご入力ください。';
-            result.requiresReason = true;
-            result.status = 'INVALID_REASON_CATEGORY';
-            result.reasonCategory = normalizedReason;
-            return result;
-        }
-        result.reasonCategory = CATEGORY_LABELS.get(category);
-
-        Boolean reasonMatchesPolicy = isReasonAllowedByPolicy(policy.PolicyType__c, category);
-        if (reasonMatchesPolicy) {
-            result.isReturnable = true;
-            result.reasonAccepted = true;
-            result.primaryMessage = 'ご迷惑をおかけし、誠に申し訳ございません。すぐに新しい商品をお送りいたしますが、よろしいでしょうか？';
-            result.status = 'RETURN_APPROVED';
-            return result;
-        }
-
-        result.primaryMessage = '申し訳ございませんが、この商品の返品はポリシーによりお受けできません。';
-        result.secondaryMessage = '代わりに交換はいかがでしょうか？';
-        result.exchangeOptions = findExchangeOptions(product);
-        if (!result.exchangeOptions.isEmpty()) {
-            result.exchangeMessage = '在庫がございます。サイズ／色違いの商品をお送りできますが、よろしいでしょうか？';
-        } else {
-            result.exchangeMessage = '申し訳ございません。現在交換用の在庫がございませんが、似たタイプの別商品をおすすめできます。';
-            result.alternativeProducts = findAlternativeProducts(product, getProductUnitPrice(product));
-            if (!result.alternativeProducts.isEmpty()) {
-                result.alternativeMessage = buildAlternativesMessage(result.alternativeProducts);
-            }
-        }
-        result.status = 'RETURN_REJECTED_REASON';
-        return result;
+      } catch (Exception ex) {
+        // フォールバックとして JSON 文字列全体を後続の処理へ渡します。
+      }
     }
 
-    private static Product2 findProduct(String productIdentifier) {
-        List<Product2> matches = [
-            SELECT Id, Name, ProductCode, Family, Description, IsActive
-            FROM Product2
-            WHERE (ProductCode = :productIdentifier OR Name = :productIdentifier)
-            AND IsActive = true
-            LIMIT 1
-        ];
+    return trimmed;
+  }
 
-        if (!matches.isEmpty()) {
-            return matches[0];
-        }
+  private static Map<ReturnReasonCategory, String> buildReasonCategoryLabels() {
+    Map<ReturnReasonCategory, String> labels = new Map<ReturnReasonCategory, String>();
+    labels.put(ReturnReasonCategory.DEFECTIVE, '不良・破損');
+    labels.put(ReturnReasonCategory.SIZE_FIT, 'サイズが合わない');
+    labels.put(ReturnReasonCategory.APPEARANCE, 'イメージと違う');
+    labels.put(ReturnReasonCategory.UNWANTED, '不要になった');
+    labels.put(ReturnReasonCategory.OTHER, 'その他');
+    return labels;
+  }
 
-        matches = [
-            SELECT Id, Name, ProductCode, Family, Description, IsActive
-            FROM Product2
-            WHERE (ProductCode LIKE :('%' + productIdentifier + '%') OR Name LIKE :('%' + productIdentifier + '%'))
-            AND IsActive = true
-            ORDER BY CreatedDate DESC
-            LIMIT 1
-        ];
+  private static Map<String, ReturnReasonCategory> buildLabelToReasonCategoryMap() {
+    Map<String, ReturnReasonCategory> mapping = new Map<String, ReturnReasonCategory>();
+    for (ReturnReasonCategory category : ReturnReasonCategory.values()) {
+      String label = CATEGORY_LABELS.get(category);
+      if (!String.isBlank(label)) {
+        mapping.put(label, category);
+      }
+    }
+    return mapping;
+  }
 
-        return matches.isEmpty() ? null : matches[0];
+  private static Map<String, Set<ReturnReasonCategory>> buildPolicyReasonMap() {
+    Map<String, Set<ReturnReasonCategory>> mapping = new Map<String, Set<ReturnReasonCategory>>();
+    mapping.put(
+      'RETURN_ALL',
+      new Set<ReturnReasonCategory>(ALL_REASON_CATEGORIES)
+    );
+    mapping.put(
+      'RETURN_DEFECTIVE_ONLY',
+      new Set<ReturnReasonCategory>{ ReturnReasonCategory.DEFECTIVE }
+    );
+    mapping.put(
+      'RETURN_DEFECTIVE_SIZE',
+      new Set<ReturnReasonCategory>{
+        ReturnReasonCategory.DEFECTIVE,
+        ReturnReasonCategory.SIZE_FIT
+      }
+    );
+    mapping.put(
+      'RETURN_SIZE_ONLY',
+      new Set<ReturnReasonCategory>{ ReturnReasonCategory.SIZE_FIT }
+    );
+    mapping.put(
+      'RETURN_APPEARANCE',
+      new Set<ReturnReasonCategory>{ ReturnReasonCategory.APPEARANCE }
+    );
+    mapping.put(
+      'RETURN_SATISFACTION',
+      new Set<ReturnReasonCategory>{
+        ReturnReasonCategory.APPEARANCE,
+        ReturnReasonCategory.UNWANTED
+      }
+    );
+    mapping.put(
+      'RETURN_UNWANTED',
+      new Set<ReturnReasonCategory>{ ReturnReasonCategory.UNWANTED }
+    );
+    mapping.put(
+      'RETURN_OTHER',
+      new Set<ReturnReasonCategory>{ ReturnReasonCategory.OTHER }
+    );
+    mapping.put(
+      'RETURN_DEFECTIVE_APPEARANCE',
+      new Set<ReturnReasonCategory>{
+        ReturnReasonCategory.DEFECTIVE,
+        ReturnReasonCategory.APPEARANCE
+      }
+    );
+    mapping.put(
+      'RETURN_DEFECTIVE_SATISFACTION',
+      new Set<ReturnReasonCategory>{
+        ReturnReasonCategory.DEFECTIVE,
+        ReturnReasonCategory.APPEARANCE,
+        ReturnReasonCategory.UNWANTED
+      }
+    );
+    return mapping;
+  }
+
+  private static List<ProductSuggestion> findExchangeOptions(Product2 product) {
+    if (product == null) {
+      return new List<ProductSuggestion>();
     }
 
-    private static StorePolicyProduct__c findPolicyForProduct(Id productId) {
-        List<StorePolicyProduct__c> policies = [
-            SELECT Id, Product__c, StorePolicy__c, IsActive__c, Remarks__c,
-                   StorePolicy__r.Id,
-                   StorePolicy__r.Name,
-                   StorePolicy__r.PolicyType__c,
-                   StorePolicy__r.IsActive__c,
-                   StorePolicy__r.ValidFrom__c,
-                   StorePolicy__r.ValidTo__c,
-                   StorePolicy__r.Description__c
-            FROM StorePolicyProduct__c
-            WHERE Product__c = :productId
-            LIMIT 1
-        ];
-        return policies.isEmpty() ? null : policies[0];
+    String family = product.Family;
+    String baseName = product.Name;
+    String baseCode = product.ProductCode;
+
+    String normalizedName = null;
+    if (!String.isBlank(baseName)) {
+      Integer hyphenIndex = baseName.indexOf('-');
+      if (hyphenIndex > 0) {
+        normalizedName = baseName.substring(0, hyphenIndex).trim();
+      } else {
+        normalizedName = baseName.trim();
+      }
+    }
+    String namePattern = normalizedName != null
+      ? '%' + normalizedName + '%'
+      : null;
+    String normalizedLower = normalizedName != null
+      ? normalizedName.toLowerCase()
+      : null;
+    String baseCodeLower = !String.isBlank(baseCode)
+      ? baseCode.toLowerCase()
+      : null;
+
+    List<Product2> rawVariations = new List<Product2>();
+    if (!String.isBlank(family)) {
+      rawVariations = [
+        SELECT Id, Name, ProductCode, Family, Description
+        FROM Product2
+        WHERE IsActive = TRUE AND Id != :product.Id AND Family = :family
+        ORDER BY CreatedDate DESC
+        LIMIT 25
+      ];
     }
 
-    private static Boolean isPolicyCurrentlyAllowingReturn(StorePolicyProduct__c policyProduct, StorePolicy__c policy) {
-        if (policyProduct == null || policy == null) {
-            return false;
+    List<Product2> variationCandidates = new List<Product2>();
+    if (!rawVariations.isEmpty()) {
+      for (Product2 candidate : rawVariations) {
+        if (variationCandidates.size() >= 5) {
+          break;
         }
-
-        if (!(policyProduct.IsActive__c == true && policy.IsActive__c == true)) {
-            return false;
+        Boolean matches = false;
+        if (
+          normalizedLower != null &&
+          candidate.Name != null &&
+          candidate.Name.toLowerCase().contains(normalizedLower)
+        ) {
+          matches = true;
         }
-
-        Date today = System.today();
-        if ((policy.ValidFrom__c != null && policy.ValidFrom__c > today) ||
-            (policy.ValidTo__c != null && policy.ValidTo__c < today)) {
-            return false;
+        if (
+          !matches &&
+          baseCodeLower != null &&
+          candidate.ProductCode != null &&
+          candidate.ProductCode.toLowerCase().startsWith(baseCodeLower)
+        ) {
+          matches = true;
         }
-
-        return true;
+        if (!matches && normalizedLower == null && baseCodeLower == null) {
+          matches = true;
+        }
+        if (matches) {
+          variationCandidates.add(candidate);
+        }
+      }
     }
 
-    private static Boolean isReasonAllowedByPolicy(String policyType, ReturnReasonCategory category) {
-        if (category == null) {
-            return false;
-        }
-
-        if (String.isBlank(policyType)) {
-            return category != ReturnReasonCategory.OTHER;
-        }
-
-        String key = policyType.trim().toUpperCase();
-        if (POLICY_REASON_MAP.containsKey(key)) {
-            Set<ReturnReasonCategory> allowed = POLICY_REASON_MAP.get(key);
-            return allowed != null && allowed.contains(category);
-        }
-
-        return false;
+    if (variationCandidates.isEmpty() && !String.isBlank(normalizedName)) {
+      rawVariations = [
+        SELECT Id, Name, ProductCode, Family, Description
+        FROM Product2
+        WHERE IsActive = TRUE AND Id != :product.Id AND Name LIKE :namePattern
+        ORDER BY CreatedDate DESC
+        LIMIT 5
+      ];
+      variationCandidates.addAll(rawVariations);
     }
 
-    private static ReturnReasonCategory resolveReasonCategory(String reasonValue) {
-        if (String.isBlank(reasonValue)) {
-            return null;
-        }
-
-        String candidate = extractCategoryToken(reasonValue);
-        if (String.isBlank(candidate)) {
-            return null;
-        }
-
-        String normalized = candidate.replace('-', '_').replace(' ', '_').toUpperCase();
-        try {
-            return ReturnReasonCategory.valueOf(normalized);
-        } catch (Exception ex) {
-            if (LABEL_TO_CATEGORY.containsKey(candidate)) {
-                return LABEL_TO_CATEGORY.get(candidate);
-            }
-            return null;
-        }
+    List<ProductSuggestion> suggestions = new List<ProductSuggestion>();
+    for (Product2 variation : variationCandidates) {
+      ProductSuggestion suggestion = new ProductSuggestion();
+      suggestion.productId = variation.Id;
+      suggestion.name = variation.Name;
+      suggestion.productCode = variation.ProductCode;
+      suggestion.family = variation.Family;
+      suggestion.description = variation.Description;
+      suggestion.unitPrice = getProductUnitPrice(variation);
+      suggestions.add(suggestion);
     }
 
-    private static String extractCategoryToken(String rawValue) {
-        if (String.isBlank(rawValue)) {
-            return null;
-        }
+    return suggestions;
+  }
 
-        String trimmed = rawValue.trim();
-        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-            try {
-                Map<String, Object> payload = (Map<String, Object>)JSON.deserializeUntyped(trimmed);
-                if (payload != null) {
-                    Object categoryValue = payload.get('category');
-                    if (categoryValue instanceof String) {
-                        String categoryString = ((String)categoryValue).trim();
-                        if (!String.isBlank(categoryString)) {
-                            return categoryString;
-                        }
-                    }
-                }
-            } catch (Exception ex) {
-                // フォールバックとして JSON 文字列全体を後続の処理へ渡します。
-            }
-        }
-
-        return trimmed;
+  private static List<ProductSuggestion> findAlternativeProducts(
+    Product2 product,
+    Decimal basePrice
+  ) {
+    if (product == null) {
+      return new List<ProductSuggestion>();
     }
 
-    private static Map<ReturnReasonCategory, String> buildReasonCategoryLabels() {
-        Map<ReturnReasonCategory, String> labels = new Map<ReturnReasonCategory, String>();
-        labels.put(ReturnReasonCategory.DEFECTIVE, '不良・破損');
-        labels.put(ReturnReasonCategory.SIZE_FIT, 'サイズが合わない');
-        labels.put(ReturnReasonCategory.APPEARANCE, 'イメージと違う');
-        labels.put(ReturnReasonCategory.UNWANTED, '不要になった');
-        labels.put(ReturnReasonCategory.OTHER, 'その他');
-        return labels;
+    Id standardPricebookId = getStandardPricebookIdSafe();
+    Decimal comparisonPrice = basePrice != null
+      ? basePrice
+      : getProductUnitPrice(product);
+
+    String family = product.Family;
+    List<ProductSuggestion> alternatives = new List<ProductSuggestion>();
+    if (String.isBlank(family)) {
+      return alternatives;
     }
 
-    private static Map<String, ReturnReasonCategory> buildLabelToReasonCategoryMap() {
-        Map<String, ReturnReasonCategory> mapping = new Map<String, ReturnReasonCategory>();
-        for (ReturnReasonCategory category : ReturnReasonCategory.values()) {
-            String label = CATEGORY_LABELS.get(category);
-            if (!String.isBlank(label)) {
-                mapping.put(label, category);
-            }
-        }
-        return mapping;
+    if (comparisonPrice != null && standardPricebookId != null) {
+      Decimal tolerance = comparisonPrice * 0.2;
+      Decimal minPrice = comparisonPrice - tolerance;
+      Decimal maxPrice = comparisonPrice + tolerance;
+      List<PricebookEntry> entries = [
+        SELECT
+          Id,
+          Product2.Id,
+          Product2.Name,
+          Product2.ProductCode,
+          Product2.Family,
+          Product2.Description,
+          UnitPrice
+        FROM PricebookEntry
+        WHERE
+          Pricebook2Id = :standardPricebookId
+          AND Product2.IsActive = TRUE
+          AND Product2Id != :product.Id
+          AND Product2.Family = :family
+          AND UnitPrice >= :minPrice
+          AND UnitPrice <= :maxPrice
+        ORDER BY UnitPrice ASC
+        LIMIT 5
+      ];
+      for (PricebookEntry entry : entries) {
+        ProductSuggestion suggestion = new ProductSuggestion();
+        suggestion.productId = entry.Product2Id;
+        suggestion.name = entry.Product2.Name;
+        suggestion.productCode = entry.Product2.ProductCode;
+        suggestion.family = entry.Product2.Family;
+        suggestion.description = entry.Product2.Description;
+        suggestion.unitPrice = entry.UnitPrice;
+        alternatives.add(suggestion);
+      }
     }
 
-    private static Map<String, Set<ReturnReasonCategory>> buildPolicyReasonMap() {
-        Map<String, Set<ReturnReasonCategory>> mapping = new Map<String, Set<ReturnReasonCategory>>();
-        mapping.put('RETURN_ALL', new Set<ReturnReasonCategory>(ALL_REASON_CATEGORIES));
-        mapping.put('RETURN_DEFECTIVE_ONLY', new Set<ReturnReasonCategory>{ReturnReasonCategory.DEFECTIVE});
-        mapping.put('RETURN_DEFECTIVE_SIZE', new Set<ReturnReasonCategory>{ReturnReasonCategory.DEFECTIVE, ReturnReasonCategory.SIZE_FIT});
-        mapping.put('RETURN_SIZE_ONLY', new Set<ReturnReasonCategory>{ReturnReasonCategory.SIZE_FIT});
-        mapping.put('RETURN_APPEARANCE', new Set<ReturnReasonCategory>{ReturnReasonCategory.APPEARANCE});
-        mapping.put('RETURN_SATISFACTION', new Set<ReturnReasonCategory>{ReturnReasonCategory.APPEARANCE, ReturnReasonCategory.UNWANTED});
-        mapping.put('RETURN_UNWANTED', new Set<ReturnReasonCategory>{ReturnReasonCategory.UNWANTED});
-        mapping.put('RETURN_OTHER', new Set<ReturnReasonCategory>{ReturnReasonCategory.OTHER});
-        mapping.put('RETURN_DEFECTIVE_APPEARANCE', new Set<ReturnReasonCategory>{ReturnReasonCategory.DEFECTIVE, ReturnReasonCategory.APPEARANCE});
-        mapping.put('RETURN_DEFECTIVE_SATISFACTION', new Set<ReturnReasonCategory>{ReturnReasonCategory.DEFECTIVE, ReturnReasonCategory.APPEARANCE, ReturnReasonCategory.UNWANTED});
-        return mapping;
+    if (alternatives.isEmpty()) {
+      List<Product2> familyProducts = [
+        SELECT Id, Name, ProductCode, Family, Description
+        FROM Product2
+        WHERE IsActive = TRUE AND Family = :family AND Id != :product.Id
+        ORDER BY CreatedDate DESC
+        LIMIT 5
+      ];
+      for (Product2 familyProduct : familyProducts) {
+        ProductSuggestion suggestion = new ProductSuggestion();
+        suggestion.productId = familyProduct.Id;
+        suggestion.name = familyProduct.Name;
+        suggestion.productCode = familyProduct.ProductCode;
+        suggestion.family = familyProduct.Family;
+        suggestion.description = familyProduct.Description;
+        suggestion.unitPrice = getProductUnitPrice(familyProduct);
+        alternatives.add(suggestion);
+      }
     }
 
-    private static List<ProductSuggestion> findExchangeOptions(Product2 product) {
-        if (product == null) {
-            return new List<ProductSuggestion>();
-        }
+    return alternatives;
+  }
 
-        String family = product.Family;
-        String baseName = product.Name;
-        String baseCode = product.ProductCode;
+  private static String buildAlternativesMessage(
+    List<ProductSuggestion> suggestions
+  ) {
+    if (suggestions == null || suggestions.isEmpty()) {
+      return null;
+    }
+    List<String> parts = new List<String>();
+    for (ProductSuggestion suggestion : suggestions) {
+      List<String> fragments = new List<String>();
+      if (!String.isBlank(suggestion.name)) {
+        fragments.add(suggestion.name);
+      }
+      if (!String.isBlank(suggestion.productCode)) {
+        fragments.add('商品コード: ' + suggestion.productCode);
+      }
+      if (suggestion.unitPrice != null) {
+        fragments.add(
+          '価格: ¥' + String.valueOf(Math.round(suggestion.unitPrice))
+        );
+      }
+      parts.add(String.join(fragments, ' / '));
+    }
+    return '代替候補: ' + String.join(parts, '、 ');
+  }
 
-        String normalizedName = null;
-        if (!String.isBlank(baseName)) {
-            Integer hyphenIndex = baseName.indexOf('-');
-            if (hyphenIndex > 0) {
-                normalizedName = baseName.substring(0, hyphenIndex).trim();
-            } else {
-                normalizedName = baseName.trim();
-            }
-        }
-        String namePattern = normalizedName != null ? '%' + normalizedName + '%' : null;
-        String normalizedLower = normalizedName != null ? normalizedName.toLowerCase() : null;
-        String baseCodeLower = !String.isBlank(baseCode) ? baseCode.toLowerCase() : null;
-
-        List<Product2> rawVariations = new List<Product2>();
-        if (!String.isBlank(family)) {
-            rawVariations = [
-                SELECT Id, Name, ProductCode, Family, Description
-                FROM Product2
-                WHERE IsActive = true
-                  AND Id != :product.Id
-                  AND Family = :family
-                ORDER BY CreatedDate DESC
-                LIMIT 25
-            ];
-        }
-
-        List<Product2> variationCandidates = new List<Product2>();
-        if (!rawVariations.isEmpty()) {
-            for (Product2 candidate : rawVariations) {
-                if (variationCandidates.size() >= 5) {
-                    break;
-                }
-                Boolean matches = false;
-                if (normalizedLower != null && candidate.Name != null && candidate.Name.toLowerCase().contains(normalizedLower)) {
-                    matches = true;
-                }
-                if (!matches && baseCodeLower != null && candidate.ProductCode != null && candidate.ProductCode.toLowerCase().startsWith(baseCodeLower)) {
-                    matches = true;
-                }
-                if (!matches && normalizedLower == null && baseCodeLower == null) {
-                    matches = true;
-                }
-                if (matches) {
-                    variationCandidates.add(candidate);
-                }
-            }
-        }
-
-        if (variationCandidates.isEmpty() && !String.isBlank(normalizedName)) {
-            rawVariations = [
-                SELECT Id, Name, ProductCode, Family, Description
-                FROM Product2
-                WHERE IsActive = true
-                  AND Id != :product.Id
-                  AND Name LIKE :namePattern
-                ORDER BY CreatedDate DESC
-                LIMIT 5
-            ];
-            variationCandidates.addAll(rawVariations);
-        }
-
-        List<ProductSuggestion> suggestions = new List<ProductSuggestion>();
-        for (Product2 variation : variationCandidates) {
-            ProductSuggestion suggestion = new ProductSuggestion();
-            suggestion.productId = variation.Id;
-            suggestion.name = variation.Name;
-            suggestion.productCode = variation.ProductCode;
-            suggestion.family = variation.Family;
-            suggestion.description = variation.Description;
-            suggestion.unitPrice = getProductUnitPrice(variation);
-            suggestions.add(suggestion);
-        }
-
-        return suggestions;
+  private static Decimal getProductUnitPrice(Product2 product) {
+    Id standardPricebookId = getStandardPricebookIdSafe();
+    if (product == null || standardPricebookId == null) {
+      return null;
     }
 
-    private static List<ProductSuggestion> findAlternativeProducts(Product2 product, Decimal basePrice) {
-        if (product == null) {
-            return new List<ProductSuggestion>();
-        }
+    List<PricebookEntry> entries = [
+      SELECT UnitPrice
+      FROM PricebookEntry
+      WHERE
+        Pricebook2Id = :standardPricebookId
+        AND Product2Id = :product.Id
+        AND IsActive = TRUE
+      LIMIT 1
+    ];
+    return entries.isEmpty() ? null : entries[0].UnitPrice;
+  }
 
-        Id standardPricebookId = getStandardPricebookIdSafe();
-        Decimal comparisonPrice = basePrice != null ? basePrice : getProductUnitPrice(product);
+  private static Id getStandardPricebookIdSafe() {
+    try {
+      if (Test.isRunningTest()) {
+        return Test.getStandardPricebookId();
+      }
 
-        String family = product.Family;
-        List<ProductSuggestion> alternatives = new List<ProductSuggestion>();
-        if (String.isBlank(family)) {
-            return alternatives;
-        }
-
-        if (comparisonPrice != null && standardPricebookId != null) {
-            Decimal tolerance = comparisonPrice * 0.2;
-            Decimal minPrice = comparisonPrice - tolerance;
-            Decimal maxPrice = comparisonPrice + tolerance;
-            List<PricebookEntry> entries = [
-                SELECT Id, Product2.Id, Product2.Name, Product2.ProductCode, Product2.Family, Product2.Description, UnitPrice
-                FROM PricebookEntry
-                WHERE Pricebook2Id = :standardPricebookId
-                  AND Product2.IsActive = true
-                  AND Product2Id != :product.Id
-                  AND Product2.Family = :family
-                  AND UnitPrice >= :minPrice
-                  AND UnitPrice <= :maxPrice
-                ORDER BY UnitPrice ASC
-                LIMIT 5
-            ];
-            for (PricebookEntry entry : entries) {
-                ProductSuggestion suggestion = new ProductSuggestion();
-                suggestion.productId = entry.Product2Id;
-                suggestion.name = entry.Product2.Name;
-                suggestion.productCode = entry.Product2.ProductCode;
-                suggestion.family = entry.Product2.Family;
-                suggestion.description = entry.Product2.Description;
-                suggestion.unitPrice = entry.UnitPrice;
-                alternatives.add(suggestion);
-            }
-        }
-
-        if (alternatives.isEmpty()) {
-            List<Product2> familyProducts = [
-                SELECT Id, Name, ProductCode, Family, Description
-                FROM Product2
-                WHERE IsActive = true
-                  AND Family = :family
-                  AND Id != :product.Id
-                ORDER BY CreatedDate DESC
-                LIMIT 5
-            ];
-            for (Product2 familyProduct : familyProducts) {
-                ProductSuggestion suggestion = new ProductSuggestion();
-                suggestion.productId = familyProduct.Id;
-                suggestion.name = familyProduct.Name;
-                suggestion.productCode = familyProduct.ProductCode;
-                suggestion.family = familyProduct.Family;
-                suggestion.description = familyProduct.Description;
-                suggestion.unitPrice = getProductUnitPrice(familyProduct);
-                alternatives.add(suggestion);
-            }
-        }
-
-        return alternatives;
+      List<Pricebook2> standard = [
+        SELECT Id
+        FROM Pricebook2
+        WHERE IsStandard = TRUE
+        LIMIT 1
+      ];
+      return standard.isEmpty() ? null : standard[0].Id;
+    } catch (Exception ex) {
+      return null;
     }
-
-    private static String buildAlternativesMessage(List<ProductSuggestion> suggestions) {
-        if (suggestions == null || suggestions.isEmpty()) {
-            return null;
-        }
-        List<String> parts = new List<String>();
-        for (ProductSuggestion suggestion : suggestions) {
-            List<String> fragments = new List<String>();
-            if (!String.isBlank(suggestion.name)) {
-                fragments.add(suggestion.name);
-            }
-            if (!String.isBlank(suggestion.productCode)) {
-                fragments.add('商品コード: ' + suggestion.productCode);
-            }
-            if (suggestion.unitPrice != null) {
-                fragments.add('価格: ¥' + String.valueOf(Math.round(suggestion.unitPrice)));
-            }
-            parts.add(String.join(fragments, ' / '));
-        }
-        return '代替候補: ' + String.join(parts, '、 ');
-    }
-
-    private static Decimal getProductUnitPrice(Product2 product) {
-        Id standardPricebookId = getStandardPricebookIdSafe();
-        if (product == null || standardPricebookId == null) {
-            return null;
-        }
-
-        List<PricebookEntry> entries = [
-            SELECT UnitPrice
-            FROM PricebookEntry
-            WHERE Pricebook2Id = :standardPricebookId
-              AND Product2Id = :product.Id
-              AND IsActive = true
-            LIMIT 1
-        ];
-        return entries.isEmpty() ? null : entries[0].UnitPrice;
-    }
-
-    private static Id getStandardPricebookIdSafe() {
-        try {
-            if (Test.isRunningTest()) {
-                return Test.getStandardPricebookId();
-            }
-
-            List<Pricebook2> standard = [
-                SELECT Id
-                FROM Pricebook2
-                WHERE IsStandard = true
-                LIMIT 1
-            ];
-            return standard.isEmpty() ? null : standard[0].Id;
-        } catch (Exception ex) {
-            return null;
-        }
-    }
+  }
 }
