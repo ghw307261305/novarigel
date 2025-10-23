@@ -5,13 +5,37 @@ jest.mock(
   "c/agentforceChat",
   () => {
     const { LightningElement } = require("lwc");
+    const initializeConversationMock = jest.fn().mockResolvedValue();
+    const prefillDraftMessageMock = jest.fn();
+    const focusComposerMock = jest.fn();
     return {
       __esModule: true,
-      default: class AgentforceChatStub extends LightningElement {}
+      initializeConversationMock,
+      prefillDraftMessageMock,
+      focusComposerMock,
+      default: class AgentforceChatStub extends LightningElement {
+        initializeConversation(...args) {
+          return initializeConversationMock(...args);
+        }
+
+        prefillDraftMessage(...args) {
+          return prefillDraftMessageMock(...args);
+        }
+
+        focusComposer(...args) {
+          return focusComposerMock(...args);
+        }
+      }
     };
   },
   { virtual: true }
 );
+
+const {
+  initializeConversationMock,
+  prefillDraftMessageMock,
+  focusComposerMock
+} = require("c/agentforceChat");
 
 jest.mock(
   "@salesforce/apex/PurchaseHistoryController.getPurchaseHistory",
@@ -31,7 +55,7 @@ describe("c-purchase-history", () => {
     jest.useRealTimers();
   });
 
-  it("opens Agentforce chat and sends the order number when the button is clicked", async () => {
+  it("opens Agentforce chat and prefills the order number when the button is clicked", async () => {
     jest.useFakeTimers();
     const element = createElement("c-purchase-history", {
       is: PurchaseHistory
@@ -77,6 +101,10 @@ describe("c-purchase-history", () => {
 
     const chatComponent = element.shadowRoot.querySelector("c-agentforce-chat");
     expect(chatComponent).not.toBeNull();
+
+    expect(initializeConversationMock).toHaveBeenCalledTimes(1);
+    expect(prefillDraftMessageMock).toHaveBeenCalledWith("00012345");
+    expect(focusComposerMock).toHaveBeenCalled();
   });
 
   it("shows an error toast when the order number is missing", async () => {

@@ -139,6 +139,24 @@ export default class AgentforceChat extends LightningElement {
         this.draftMessage = event.target.value;
     }
 
+    @api
+    async initializeConversation() {
+        await this.ensureSession();
+    }
+
+    @api
+    prefillDraftMessage(value) {
+        this.draftMessage = this.normalizeMessageContent(value);
+    }
+
+    @api
+    focusComposer() {
+        const composerInput = this.template.querySelector('[data-id="composer-input"]');
+        if (composerInput && typeof composerInput.focus === 'function') {
+            composerInput.focus();
+        }
+    }
+
     async handleSend() {
         const draft = this.draftMessage;
         this.draftMessage = '';
@@ -274,6 +292,7 @@ export default class AgentforceChat extends LightningElement {
         this.sessionId = sessionId;
         this.sessionKey = result?.externalSessionKey || payload.externalSessionKey;
         this.messagesEndpoint = this.resolveMessagesEndpoint(result, sessionId, startSessionEndpoint);
+        this.appendInitialMessagesFromStartSession(result);
     }
 
     buildStartSessionEndpoint(template, botId) {
@@ -459,6 +478,165 @@ export default class AgentforceChat extends LightningElement {
             return error.message;
         }
         return 'Unexpected error';
+    }
+
+    appendInitialMessagesFromStartSession(result) {
+        const initialMessages = this.extractInitialMessagesFromStartSession(result);
+        if (!initialMessages.length) {
+            return;
+        }
+
+        const deduped = this.filterOutDuplicateMessages(initialMessages);
+        if (!deduped.length) {
+            return;
+        }
+
+        this.messages = [...this.messages, ...deduped];
+    }
+
+    extractInitialMessagesFromStartSession(result) {
+        if (!result) {
+            return [];
+        }
+
+        let payloads = [];
+
+        if (result.data && typeof result.data === 'object') {
+            payloads = this.collectInitialMessagePayloadsFromSource(result.data);
+        }
+
+        if (!payloads.length && result.body) {
+            const parsedBody = this.safeParseJson(result.body);
+            if (parsedBody && typeof parsedBody === 'object') {
+                payloads = this.collectInitialMessagePayloadsFromSource(parsedBody);
+            }
+        }
+
+        if (!payloads.length) {
+            return [];
+        }
+
+        return this.buildAgentResponses({ messages: payloads });
+    }
+
+    collectInitialMessagePayloadsFromSource(source) {
+        if (!source || typeof source !== 'object') {
+            return [];
+        }
+
+        const payloads = [];
+        const containers = [source];
+
+        if (source.session && typeof source.session === 'object') {
+            containers.push(source.session);
+        }
+
+        if (Array.isArray(source.sessions)) {
+            source.sessions.forEach((sessionEntry) => {
+                if (sessionEntry && typeof sessionEntry === 'object') {
+                    containers.push(sessionEntry);
+                }
+            });
+        }
+
+        const keyConfig = [
+            { key: 'noticeMessages', type: 'notice' },
+            { key: 'systemMessages', type: 'system' },
+            { key: 'messages', type: '' },
+            { key: 'initialMessages', type: '' },
+            { key: 'welcomeMessages', type: '' },
+            { key: 'preSessionMessages', type: '' },
+            { key: 'message', type: '' }
+        ];
+
+        containers.forEach((container) => {
+            keyConfig.forEach(({ key, type }) => {
+                if (!container || !Object.prototype.hasOwnProperty.call(container, key)) {
+                    return;
+                }
+
+                const normalized = this.normalizeInitialMessageValue(container[key], type);
+                if (normalized.length) {
+                    payloads.push(...normalized);
+                }
+            });
+        });
+
+        return payloads;
+    }
+
+    normalizeInitialMessageValue(value, fallbackType) {
+        const values = Array.isArray(value) ? value : [value];
+        return values
+            .map((entry) => this.normalizeInitialMessageEntry(entry, fallbackType))
+            .filter(Boolean);
+    }
+
+    normalizeInitialMessageEntry(entry, fallbackType) {
+        if (entry === null || entry === undefined) {
+            return undefined;
+        }
+
+        if (typeof entry === 'string') {
+            const trimmed = entry.trim();
+            if (!trimmed) {
+                return undefined;
+            }
+            if (fallbackType) {
+                return { type: fallbackType, message: trimmed };
+            }
+            return trimmed;
+        }
+
+        if (typeof entry === 'object') {
+            const normalized = { ...entry };
+            if (!normalized.type && fallbackType) {
+                normalized.type = fallbackType;
+            }
+            return normalized;
+        }
+
+        return undefined;
+    }
+
+    safeParseJson(value) {
+        if (!value || typeof value !== 'string') {
+            return undefined;
+        }
+
+        try {
+            return JSON.parse(value);
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    filterOutDuplicateMessages(messages) {
+        if (!Array.isArray(messages) || !messages.length) {
+            return [];
+        }
+
+        const seen = new Set(
+            this.messages.map((message) => `${message.role}|${message.content}`)
+        );
+
+        const deduped = [];
+
+        messages.forEach((message) => {
+            if (!message || typeof message.content !== 'string') {
+                return;
+            }
+
+            const key = `${message.role}|${message.content}`;
+            if (seen.has(key)) {
+                return;
+            }
+
+            seen.add(key);
+            deduped.push(message);
+        });
+
+        return deduped;
     }
 
     buildAgentResponses(response) {
