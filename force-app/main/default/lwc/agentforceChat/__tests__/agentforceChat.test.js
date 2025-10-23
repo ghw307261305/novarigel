@@ -58,6 +58,10 @@ const getConfigAdapter = registerApexTestWireAdapter(mockGetConfig);
 
 const flushPromises = () => new Promise(setImmediate);
 
+const DEFAULT_START_SESSION_NOTICE = `こんにちは。NovaRigel返品エージェントです。
+ご購入商品の返品や交換に関するご相談をサポートいたします。
+注文番号をお持ちの場合は、まず注文番号を入力してください。`;
+
 describe('c-agentforce-chat', () => {
     afterEach(() => {
         while (document.body.firstChild) {
@@ -122,8 +126,12 @@ describe('c-agentforce-chat', () => {
         const userMessage = element.shadowRoot.querySelector('div[data-role="user"] .message-body');
         expect(userMessage.textContent).toBe('Hi there');
 
-        const agentMessage = element.shadowRoot.querySelector('div[data-role="agent"] .message-body');
-        expect(agentMessage.textContent).toBe('Hello from Agentforce');
+        const agentMessages = Array.from(
+            element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
+        ).map((node) => node.textContent);
+
+        expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
+        expect(agentMessages[agentMessages.length - 1]).toBe('Hello from Agentforce');
     });
 
     it('shows error state when the Agentforce call fails', async () => {
@@ -164,8 +172,85 @@ describe('c-agentforce-chat', () => {
 
         expect(element.shadowRoot.querySelector('.message.status')).toBeNull();
 
-        const agentMessage = element.shadowRoot.querySelector('div[data-role="agent"] .message-body');
-        expect(agentMessage.textContent).toBe('Agentforce request failed');
+        const agentMessages = Array.from(
+            element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
+        ).map((node) => node.textContent);
+
+        expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
+        expect(agentMessages).toContain('Agentforce request failed');
+    });
+
+    it('initializes the session and renders notice messages from the start session response', async () => {
+        const element = createElement('c-agentforce-chat', {
+            is: AgentforceChat
+        });
+        element.botId = 'bot-notice';
+        document.body.appendChild(element);
+
+        getConfigAdapter.emit({
+            startSessionEndpointUrl: 'https://example.com/sessions',
+            messagesEndpointUrl: 'https://example.com/messages',
+            botId: 'bot-notice'
+        });
+
+        mockStartSession.mockResolvedValueOnce({
+            sessionId: 'session-notice',
+            messagesUrl: 'https://example.com/messages/session-notice',
+            data: {
+                session: {
+                    noticeMessages: [
+                        '返品・交換サポートへようこそ。',
+                        { message: '注文番号を入力してください。', type: 'notice' }
+                    ]
+                }
+            }
+        });
+
+        await flushPromises();
+
+        await element.initializeConversation();
+        await flushPromises();
+
+        expect(mockStartSession).toHaveBeenCalledTimes(1);
+
+        const agentMessages = Array.from(
+            element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
+        ).map((node) => node.textContent);
+
+        expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
+        expect(agentMessages).toContain('返品・交換サポートへようこそ。');
+        expect(agentMessages).toContain('注文番号を入力してください。');
+    });
+
+    it('adds the default notice message when no initial messages are returned', async () => {
+        const element = createElement('c-agentforce-chat', {
+            is: AgentforceChat
+        });
+        element.botId = 'bot-empty';
+        document.body.appendChild(element);
+
+        getConfigAdapter.emit({
+            startSessionEndpointUrl: 'https://example.com/sessions',
+            messagesEndpointUrl: 'https://example.com/messages',
+            botId: 'bot-empty'
+        });
+
+        mockStartSession.mockResolvedValueOnce({
+            sessionId: 'session-empty',
+            messagesUrl: 'https://example.com/messages/session-empty'
+        });
+
+        await flushPromises();
+
+        await element.initializeConversation();
+        await flushPromises();
+
+        const agentMessages = Array.from(
+            element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
+        ).map((node) => node.textContent);
+
+        expect(agentMessages).toHaveLength(1);
+        expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
     });
 
     it('builds the messages endpoint from configured metadata when the session response omits URLs', async () => {
@@ -314,7 +399,25 @@ describe('c-agentforce-chat', () => {
             })
         );
 
-        const agentMessage = element.shadowRoot.querySelector('div[data-role="agent"] .message-body');
-        expect(agentMessage.textContent).toBe('Acknowledged');
+        const agentMessages = Array.from(
+            element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
+        ).map((node) => node.textContent);
+
+        expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
+        expect(agentMessages[agentMessages.length - 1]).toBe('Acknowledged');
+    });
+
+    it('prefills the composer when prefillDraftMessage is invoked', async () => {
+        const element = createElement('c-agentforce-chat', {
+            is: AgentforceChat
+        });
+        document.body.appendChild(element);
+
+        element.prefillDraftMessage('00099999');
+
+        await flushPromises();
+
+        const textarea = element.shadowRoot.querySelector('lightning-textarea');
+        expect(textarea.value).toBe('00099999');
     });
 });
