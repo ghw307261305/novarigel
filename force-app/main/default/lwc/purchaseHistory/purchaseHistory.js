@@ -110,10 +110,10 @@ export default class PurchaseHistory extends LightningElement {
       if (!this.isAgentforceChatSessionReady) {
         await this.delay(this.chatLaunchDelay);
         this.isAgentforceChatSessionReady = true;
-        await this.waitForRender();
       }
 
-      await this.sendOrderNumberToAgentforceChat(orderNumber);
+      await this.waitForRender();
+      await this.prepareAgentforceChat(orderNumber);
     } finally {
       this.isAgentforceChatStarting = false;
       await this.waitForRender();
@@ -143,18 +143,37 @@ export default class PurchaseHistory extends LightningElement {
     });
   }
 
-  async sendOrderNumberToAgentforceChat(orderNumber) {
-    if (!orderNumber) {
+  async prepareAgentforceChat(orderNumber) {
+    const chat = this.template.querySelector("c-agentforce-chat");
+    if (!chat) {
       return;
     }
 
     try {
-      const chat = this.template.querySelector("c-agentforce-chat");
-      if (chat && typeof chat.sendMessage === "function") {
-        await chat.sendMessage(orderNumber);
+      if (typeof chat.initializeConversation === "function") {
+        await chat.initializeConversation();
       }
     } catch (error) {
-      console.error("Failed to send message to Agentforce chat", error);
+      console.error("Failed to initialize Agentforce chat session", error);
+    }
+
+    const normalizedOrderNumber =
+      orderNumber === null || orderNumber === undefined
+        ? ""
+        : String(orderNumber);
+
+    try {
+      if (typeof chat.prefillDraftMessage === "function") {
+        chat.prefillDraftMessage(normalizedOrderNumber);
+      } else if ("draftMessage" in chat) {
+        chat.draftMessage = normalizedOrderNumber;
+      }
+
+      if (typeof chat.focusComposer === "function") {
+        chat.focusComposer();
+      }
+    } catch (error) {
+      console.error("Failed to prepare Agentforce chat composer", error);
     }
   }
 
