@@ -15,6 +15,10 @@ const STATUS = {
     SENDING: 'Sending message…'
 };
 
+const DEFAULT_START_SESSION_NOTICE = `こんにちは。NovaRigel返品エージェントです。
+ご購入商品の返品や交換に関するご相談をサポートいたします。
+注文番号をお持ちの場合は、まず注文番号を入力してください。`;
+
 export default class AgentforceChat extends LightningElement {
     _startSessionEndpointUrl;
     _messagesEndpointUrl;
@@ -293,6 +297,7 @@ export default class AgentforceChat extends LightningElement {
         this.sessionKey = result?.externalSessionKey || payload.externalSessionKey;
         this.messagesEndpoint = this.resolveMessagesEndpoint(result, sessionId, startSessionEndpoint);
         this.appendInitialMessagesFromStartSession(result);
+        this.ensureDefaultNoticeMessage();
     }
 
     buildStartSessionEndpoint(template, botId) {
@@ -765,5 +770,26 @@ export default class AgentforceChat extends LightningElement {
         const statusId = this.statusMessageId;
         this.messages = this.messages.filter((message) => message.id !== statusId);
         this.statusMessageId = undefined;
+    }
+
+    ensureDefaultNoticeMessage() {
+        const existingIndex = this.messages.findIndex(
+            (message) => message.role === 'agent' && message.content === DEFAULT_START_SESSION_NOTICE
+        );
+
+        if (existingIndex === 0) {
+            return;
+        }
+
+        if (existingIndex > 0) {
+            const existing = this.messages[existingIndex];
+            const before = this.messages.slice(0, existingIndex);
+            const after = this.messages.slice(existingIndex + 1);
+            this.messages = [existing, ...before, ...after];
+            return;
+        }
+
+        const noticeMessage = this.createMessage('agent', DEFAULT_START_SESSION_NOTICE, 'type-notice');
+        this.messages = [noticeMessage, ...this.messages];
     }
 }
