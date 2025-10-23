@@ -253,6 +253,47 @@ describe('c-agentforce-chat', () => {
         expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
     });
 
+    it('initializes the session and renders notice messages from the start session response', async () => {
+        const element = createElement('c-agentforce-chat', {
+            is: AgentforceChat
+        });
+        element.botId = 'bot-notice';
+        document.body.appendChild(element);
+
+        getConfigAdapter.emit({
+            startSessionEndpointUrl: 'https://example.com/sessions',
+            messagesEndpointUrl: 'https://example.com/messages',
+            botId: 'bot-notice'
+        });
+
+        mockStartSession.mockResolvedValueOnce({
+            sessionId: 'session-notice',
+            messagesUrl: 'https://example.com/messages/session-notice',
+            data: {
+                session: {
+                    noticeMessages: [
+                        '返品・交換サポートへようこそ。',
+                        { message: '注文番号を入力してください。', type: 'notice' }
+                    ]
+                }
+            }
+        });
+
+        await flushPromises();
+
+        await element.initializeConversation();
+        await flushPromises();
+
+        expect(mockStartSession).toHaveBeenCalledTimes(1);
+
+        const agentMessages = Array.from(
+            element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
+        ).map((node) => node.textContent);
+
+        expect(agentMessages).toContain('返品・交換サポートへようこそ。');
+        expect(agentMessages).toContain('注文番号を入力してください。');
+    });
+
     it('builds the messages endpoint from configured metadata when the session response omits URLs', async () => {
         const element = createElement('c-agentforce-chat', {
             is: AgentforceChat
@@ -405,6 +446,20 @@ describe('c-agentforce-chat', () => {
 
         expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
         expect(agentMessages[agentMessages.length - 1]).toBe('Acknowledged');
+    });
+
+    it('prefills the composer when prefillDraftMessage is invoked', async () => {
+        const element = createElement('c-agentforce-chat', {
+            is: AgentforceChat
+        });
+        document.body.appendChild(element);
+
+        element.prefillDraftMessage('00099999');
+
+        await flushPromises();
+
+        const textarea = element.shadowRoot.querySelector('lightning-textarea');
+        expect(textarea.value).toBe('00099999');
     });
 
     it('prefills the composer when prefillDraftMessage is invoked', async () => {
