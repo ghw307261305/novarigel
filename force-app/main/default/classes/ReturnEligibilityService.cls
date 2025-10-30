@@ -174,10 +174,7 @@ public with sharing class ReturnEligibilityService {
     return handleEvaluation(productIdentifier, returnReason);
   }
 
-  @InvocableMethod(
-    label='返品ポリシー判定'
-    description='商品名または商品コードと返品理由に基づいて返品可否を判定し、適切なガイダンスを返します。'
-  )
+  @InvocableMethod(label='返品ポリシー判定', description='商品名または商品コードと返品理由に基づいて返品可否を判定し、適切なガイダンスを返します。')
   public static List<EvaluationResult> evaluate(List<EvaluationInput> inputs) {
     List<EvaluationResult> results = new List<EvaluationResult>();
     for (EvaluationInput input : inputs) {

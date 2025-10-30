@@ -52,10 +52,7 @@ public with sharing class ReturnReasonEvaluationService {
     public Decimal productUnitPrice;
   }
 
-  @InvocableMethod(
-    label='返品理由の判定',
-    description='入力された返品理由をカテゴリ判定し、ポリシー適合を確認して最終的な可否を返します。'
-  )
+  @InvocableMethod(label='返品理由の判定', description='入力された返品理由をカテゴリ判定し、ポリシー適合を確認して最終的な可否を返します。')
   public static List<ReturnEligibilityService.EvaluationResult> evaluateForFlow(
     List<ReasonEvaluationInput> inputs
   ) {
