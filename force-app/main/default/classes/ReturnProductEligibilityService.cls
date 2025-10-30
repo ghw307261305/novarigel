@@ -98,8 +98,10 @@ public with sharing class ReturnProductEligibilityService {
     evaluation.result.reasonAccepted = false;
     evaluation.result.status = 'AWAITING_REASON';
     evaluation.result.primaryMessage = '返品理由をお聞かせください。';
-    evaluation.result.secondaryMessage = '該当する理由カテゴリを選択してください。';
-    evaluation.result.availableReasonCategories = ReturnReasonEvaluationService.getAvailableReasonLabels();
+    evaluation.result.secondaryMessage = '返品理由をご記入ください。';
+    if (evaluation.result.availableReasonCategories != null) {
+      evaluation.result.availableReasonCategories.clear();
+    }
     return evaluation;
   }
 
