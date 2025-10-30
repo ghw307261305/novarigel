@@ -12,10 +12,7 @@ public with sharing class ReturnProductEligibilityService {
     public String productIdentifier;
   }
 
-  @InvocableMethod(
-    label='返品対象商品の判定',
-    description='商品情報に基づき返品ポリシーを確認し、理由判定フローへ渡すための情報を返します。'
-  )
+  @InvocableMethod(label='返品対象商品の判定', description='商品情報に基づき返品ポリシーを確認し、理由判定フローへ渡すための情報を返します。')
   public static List<ReturnEligibilityService.EvaluationResult> evaluateForFlow(
     List<ProductEvaluationInput> inputs
   ) {
