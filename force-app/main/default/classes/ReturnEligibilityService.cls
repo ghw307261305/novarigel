@@ -2,7 +2,7 @@
  * @description       :
  * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
  * @group             :
- * @last modified on  : 10-18-2025
+ * @last modified on  : 10-30-2025
  * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
  **/
 public with sharing class ReturnEligibilityService {
@@ -174,7 +174,7 @@ public with sharing class ReturnEligibilityService {
     return handleEvaluation(productIdentifier, returnReason);
   }
 
-  @InvocableMethod(label='返品ポリシー判定', description='商品名または商品コードと返品理由に基づいて返品可否を判定し、適切なガイダンスを返します。')
+  @InvocableMethod(label='返品ポリシー判定' description='商品名または商品コードと返品理由に基づいて返品可否を判定し、適切なガイダンスを返します。')
   public static List<EvaluationResult> evaluate(List<EvaluationInput> inputs) {
     List<EvaluationResult> results = new List<EvaluationResult>();
     for (EvaluationInput input : inputs) {
@@ -205,7 +205,7 @@ public with sharing class ReturnEligibilityService {
       result = new EvaluationResult();
     }
 
-    if (!Boolean.TRUE.equals(productEvaluation.canProceed)) {
+    if (!productEvaluation.canProceed) {
       return result;
     }
 
