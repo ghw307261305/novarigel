@@ -1,13 +1,4 @@
 public with sharing class ReturnOrderProcessingService {
-  public class ProductInformation {
-    @AuraEnabled
-    @InvocableVariable
-    public String productCode;
-
-    @AuraEnabled
-    @InvocableVariable
-    public String productName;
-  }
 
   public class Request {
     @AuraEnabled
@@ -110,9 +101,7 @@ public with sharing class ReturnOrderProcessingService {
     }
 
     if (
-      !(Boolean.TRUE.equals(evaluation.productFound) &&
-      Boolean.TRUE.equals(evaluation.isReturnable) &&
-      Boolean.TRUE.equals(evaluation.reasonAccepted))
+      !(evaluation.productFound && evaluation.isReturnable && evaluation.reasonAccepted)
     ) {
       response.success = false;
       response.status = evaluation.status;
@@ -151,8 +140,7 @@ public with sharing class ReturnOrderProcessingService {
   }
 
   @InvocableMethod(
-    label = '返品注文処理',
-    description = 'Flow から返品注文を作成します。'
+    label = '返品注文処理' description = 'Flow から返品注文を作成します。'
   )
   public static List<Response> processReturnFromFlow(List<Request> requests) {
     if (requests == null || requests.isEmpty()) {
@@ -171,7 +159,6 @@ public with sharing class ReturnOrderProcessingService {
 
   private static void validateInputs(
     String orderNumber,
-    ProductInformation productInfo,
     String productIdentifier,
     Decimal quantity
   ) {
@@ -181,7 +168,7 @@ public with sharing class ReturnOrderProcessingService {
       );
     }
 
-    if (!hasProductInformation(productInfo) && String.isBlank(productIdentifier)) {
+    if (!String.isBlank(productIdentifier)) {
       throw new AuraHandledException(
         '返品手続きを進めるには商品情報が必要です。'
       );
@@ -230,11 +217,11 @@ public with sharing class ReturnOrderProcessingService {
   }
 
   private static String buildSuccessMessage(String returnOrderNumber) {
-    String number = String.isBlank(returnOrderNumber)
+    String orderNumber = String.isBlank(returnOrderNumber)
       ? '不明'
       : returnOrderNumber;
     return '返品手続きが完了しました。返品注文番号は『' +
-      number +
+      orderNumber +
       '』です。この番号をお控えください。担当者が確認次第、メールにてご連絡いたします。';
   }
 
@@ -662,9 +649,9 @@ public with sharing class ReturnOrderProcessingService {
         .fields.getMap()
         .containsKey('ReturnOrderNumber')
     ) {
-      String number = (String) returnOrder.get('ReturnOrderNumber');
-      if (!String.isBlank(number)) {
-        return number;
+      String orderNumber = (String) returnOrder.get('ReturnOrderNumber');
+      if (!String.isBlank(orderNumber)) {
+        return orderNumber;
       }
     }
 
