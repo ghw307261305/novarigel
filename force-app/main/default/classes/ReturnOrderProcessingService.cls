@@ -16,7 +16,7 @@ public with sharing class ReturnOrderProcessingService {
 
     @AuraEnabled
     @InvocableVariable
-    public ProductInformation product;
+    public String productIdentifier;
 
     @AuraEnabled
     @InvocableVariable
@@ -75,12 +75,12 @@ public with sharing class ReturnOrderProcessingService {
     String normalizedOrderNumber = request.orderNumber != null
       ? request.orderNumber.trim()
       : null;
-    ProductInformation productInfo = normalizeProductInformation(
-      request.product
+    String normalizedProductIdentifier = normalizeProductIdentifier(
+      request.productIdentifier
     );
-    Product2 resolvedProduct = findProductRecord(productInfo);
-    String normalizedProductIdentifier = resolveProductIdentifier(
-      productInfo,
+    Product2 resolvedProduct = findProductRecord(normalizedProductIdentifier);
+    String resolvedProductIdentifier = resolveProductIdentifier(
+      normalizedProductIdentifier,
       resolvedProduct
     );
     String normalizedReturnReason = request.returnReason != null
@@ -90,13 +90,12 @@ public with sharing class ReturnOrderProcessingService {
 
     validateInputs(
       normalizedOrderNumber,
-      productInfo,
-      normalizedProductIdentifier,
+      resolvedProductIdentifier,
       quantity
     );
 
     ReturnEligibilityService.EvaluationResult evaluation = ReturnEligibilityService.evaluateProductReturn(
-      normalizedProductIdentifier,
+      resolvedProductIdentifier,
       normalizedReturnReason
     );
 
@@ -124,7 +123,7 @@ public with sharing class ReturnOrderProcessingService {
 
     ReturnOrderOutcome outcome = createReturnOrder(
       normalizedOrderNumber,
-      normalizedProductIdentifier,
+      resolvedProductIdentifier,
       resolvedProduct != null ? resolvedProduct.Id : null,
       quantity,
       normalizedReturnReason
@@ -195,66 +194,27 @@ public with sharing class ReturnOrderProcessingService {
     }
   }
 
-  private static ProductInformation normalizeProductInformation(
-    ProductInformation input
-  ) {
-    if (input == null) {
+  private static String normalizeProductIdentifier(String input) {
+    return String.isBlank(input) ? null : input.trim();
+  }
+
+  private static Product2 findProductRecord(String identifier) {
+    if (String.isBlank(identifier)) {
       return null;
     }
 
-    ProductInformation normalized = new ProductInformation();
-    normalized.productCode = !String.isBlank(input.productCode)
-      ? input.productCode.trim()
-      : null;
-    normalized.productName = !String.isBlank(input.productName)
-      ? input.productName.trim()
-      : null;
-
-    return normalized;
-  }
-
-  private static Boolean hasProductInformation(ProductInformation info) {
-    return info != null &&
-      (!String.isBlank(info.productCode) || !String.isBlank(info.productName));
-  }
-
-  private static Product2 findProductRecord(ProductInformation info) {
-    if (!hasProductInformation(info)) {
-      return null;
-    }
-
-    String code = info.productCode;
-    String name = info.productName;
-    List<Product2> products;
-
-    if (!String.isBlank(code) && !String.isBlank(name)) {
-      products = [
-        SELECT Id, Name, ProductCode
-        FROM Product2
-        WHERE IsActive = TRUE AND (ProductCode = :code OR Name = :name)
-        LIMIT 1
-      ];
-    } else if (!String.isBlank(code)) {
-      products = [
-        SELECT Id, Name, ProductCode
-        FROM Product2
-        WHERE IsActive = TRUE AND ProductCode = :code
-        LIMIT 1
-      ];
-    } else {
-      products = [
-        SELECT Id, Name, ProductCode
-        FROM Product2
-        WHERE IsActive = TRUE AND Name = :name
-        LIMIT 1
-      ];
-    }
+    List<Product2> products = [
+      SELECT Id, Name, ProductCode
+      FROM Product2
+      WHERE IsActive = TRUE AND (ProductCode = :identifier OR Name = :identifier)
+      LIMIT 1
+    ];
 
     return products.isEmpty() ? null : products[0];
   }
 
   private static String resolveProductIdentifier(
-    ProductInformation info,
+    String identifier,
     Product2 productRecord
   ) {
     if (productRecord != null) {
@@ -266,15 +226,7 @@ public with sharing class ReturnOrderProcessingService {
       }
     }
 
-    if (info != null && !String.isBlank(info.productCode)) {
-      return info.productCode;
-    }
-
-    if (info != null && !String.isBlank(info.productName)) {
-      return info.productName;
-    }
-
-    return null;
+    return identifier;
   }
 
   private static String buildSuccessMessage(String returnOrderNumber) {
