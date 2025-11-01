@@ -151,6 +151,31 @@ private class ReturnOrderProcessingServiceTest {
   }
 
   @IsTest
+  static void testProcessReturnFromFlow() {
+    TestData data = TestData.setup();
+
+    ReturnOrderProcessingService.Request request = new ReturnOrderProcessingService.Request();
+    request.orderNumber = data.orderNumber;
+    request.productCode = data.returnableProductCode;
+    request.quantity = 1;
+    request.returnReason = '糸のほつれがありました';
+
+    Test.startTest();
+    List<ReturnOrderProcessingService.Response> responses = ReturnOrderProcessingService.processReturnFromFlow(
+      new List<ReturnOrderProcessingService.Request>{ request }
+    );
+    Test.stopTest();
+
+    System.assertEquals(1, responses.size(), 'Flow response should contain a single entry.');
+    System.assertEquals(true, responses[0].success, 'Flow should surface a successful result.');
+    System.assertEquals(
+      'RETURN_ORDER_CREATED',
+      responses[0].status,
+      'Flow response should indicate order creation.'
+    );
+  }
+
+  @IsTest
   static void testProcessReturnFailureWhenOrderMissing() {
     TestData data = TestData.setup();
 
