@@ -275,30 +275,40 @@ private class ReturnOrderProcessingServiceTest {
     missingOrder.quantity = 1;
     missingOrder.returnReason = '糸のほつれがあります';
 
-    try {
-      ReturnOrderProcessingService.processReturn(missingOrder);
-      System.assert(false, 'Missing order number should throw an exception.');
-    } catch (AuraHandledException e) {
-      System.assert(
-        e.getMessage().contains('注文番号'),
-        'Message should mention order number.'
-      );
-    }
+    ReturnOrderProcessingService.Response missingOrderResponse = ReturnOrderProcessingService.processReturn(
+      missingOrder
+    );
+    System.assertEquals(false, missingOrderResponse.success, 'Missing order should fail.');
+    System.assertEquals(
+      'INVALID_INPUT',
+      missingOrderResponse.status,
+      'Status should indicate invalid input.'
+    );
+    System.assertEquals(
+      '返品手続きを進めるには注文番号が必要です。',
+      missingOrderResponse.primaryMessage,
+      'Primary message should mention the order number.'
+    );
 
     ReturnOrderProcessingService.Request missingProduct = new ReturnOrderProcessingService.Request();
     missingProduct.orderNumber = data.orderNumber;
     missingProduct.quantity = 1;
     missingProduct.returnReason = '糸のほつれがあります';
 
-    try {
-      ReturnOrderProcessingService.processReturn(missingProduct);
-      System.assert(false, 'Missing product code should throw an exception.');
-    } catch (AuraHandledException e) {
-      System.assert(
-        e.getMessage().contains('商品情報'),
-        'Message should mention product identifier.'
-      );
-    }
+    ReturnOrderProcessingService.Response missingProductResponse = ReturnOrderProcessingService.processReturn(
+      missingProduct
+    );
+    System.assertEquals(false, missingProductResponse.success, 'Missing product should fail.');
+    System.assertEquals(
+      'INVALID_INPUT',
+      missingProductResponse.status,
+      'Status should indicate invalid input.'
+    );
+    System.assertEquals(
+      '返品手続きを進めるには商品情報が必要です。',
+      missingProductResponse.primaryMessage,
+      'Primary message should mention the product information.'
+    );
 
     ReturnOrderProcessingService.Request invalidQuantity = new ReturnOrderProcessingService.Request();
     invalidQuantity.orderNumber = data.orderNumber;
@@ -306,15 +316,20 @@ private class ReturnOrderProcessingServiceTest {
     invalidQuantity.quantity = 0;
     invalidQuantity.returnReason = '糸のほつれがあります';
 
-    try {
-      ReturnOrderProcessingService.processReturn(invalidQuantity);
-      System.assert(false, 'Invalid quantity should throw an exception.');
-    } catch (AuraHandledException e) {
-      System.assert(
-        e.getMessage().contains('返品数量'),
-        'Message should mention quantity.'
-      );
-    }
+    ReturnOrderProcessingService.Response invalidQuantityResponse = ReturnOrderProcessingService.processReturn(
+      invalidQuantity
+    );
+    System.assertEquals(false, invalidQuantityResponse.success, 'Invalid quantity should fail.');
+    System.assertEquals(
+      'INVALID_INPUT',
+      invalidQuantityResponse.status,
+      'Status should indicate invalid input.'
+    );
+    System.assertEquals(
+      '返品数量は1以上の数値を指定してください。',
+      invalidQuantityResponse.primaryMessage,
+      'Primary message should mention quantity.'
+    );
   }
 
   private static ReturnOrderProcessingService.ProductInformation buildProductInfo(
