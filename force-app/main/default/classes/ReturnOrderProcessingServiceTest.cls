@@ -6,7 +6,7 @@ private class ReturnOrderProcessingServiceTest {
 
     ReturnOrderProcessingService.Request request = new ReturnOrderProcessingService.Request();
     request.orderNumber = data.orderNumber;
-    request.productCode = data.returnableProductCode;
+    request.productIdentifier = data.returnableProductCode;
     request.quantity = 1;
     request.returnReason = '  糸のほつれがありました  ';
 
@@ -114,7 +114,7 @@ private class ReturnOrderProcessingServiceTest {
 
     ReturnOrderProcessingService.Request request = new ReturnOrderProcessingService.Request();
     request.orderNumber = data.orderNumber;
-    request.productCode = data.returnableProductName;
+    request.productIdentifier = data.returnableProductName;
     request.quantity = 1;
     request.returnReason = '  糸のほつれがありました  ';
 
@@ -156,7 +156,7 @@ private class ReturnOrderProcessingServiceTest {
 
     ReturnOrderProcessingService.Request request = new ReturnOrderProcessingService.Request();
     request.orderNumber = data.orderNumber;
-    request.productCode = data.returnableProductCode;
+    request.productIdentifier = data.returnableProductCode;
     request.quantity = 1;
     request.returnReason = '糸のほつれがありました';
 
@@ -181,7 +181,7 @@ private class ReturnOrderProcessingServiceTest {
 
     ReturnOrderProcessingService.Request request = new ReturnOrderProcessingService.Request();
     request.orderNumber = 'ORD-NOT-FOUND';
-    request.productCode = data.returnableProductCode;
+    request.productIdentifier = data.returnableProductCode;
     request.quantity = 1;
     request.returnReason = '糸のほつれがあります';
 
@@ -235,7 +235,7 @@ private class ReturnOrderProcessingServiceTest {
 
     ReturnOrderProcessingService.Request request = new ReturnOrderProcessingService.Request();
     request.orderNumber = data.orderNumber;
-    request.productCode = data.returnableProductCode;
+    request.productIdentifier = data.returnableProductCode;
     request.quantity = 1;
     request.returnReason = '不要になりました';
 
@@ -271,7 +271,7 @@ private class ReturnOrderProcessingServiceTest {
     TestData data = TestData.setup();
 
     ReturnOrderProcessingService.Request missingOrder = new ReturnOrderProcessingService.Request();
-    missingOrder.productCode = data.returnableProductCode;
+    missingOrder.productIdentifier = data.returnableProductCode;
     missingOrder.quantity = 1;
     missingOrder.returnReason = '糸のほつれがあります';
 
@@ -302,7 +302,7 @@ private class ReturnOrderProcessingServiceTest {
 
     ReturnOrderProcessingService.Request invalidQuantity = new ReturnOrderProcessingService.Request();
     invalidQuantity.orderNumber = data.orderNumber;
-    invalidQuantity.productCode = data.returnableProductCode;
+    invalidQuantity.productIdentifier = data.returnableProductCode;
     invalidQuantity.quantity = 0;
     invalidQuantity.returnReason = '糸のほつれがあります';
 
