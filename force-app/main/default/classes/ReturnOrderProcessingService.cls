@@ -107,30 +107,30 @@ public with sharing class ReturnOrderProcessingService {
       return buildErrorResponse('INVALID_INPUT', validationError, null);
     }
 
-    ReturnEligibilityService.EvaluationResult evaluation = ReturnEligibilityService.evaluateProductReturn(
-      resolvedProductIdentifier,
-      normalizedReturnReason
-    );
+    // ReturnEligibilityService.EvaluationResult evaluation = ReturnEligibilityService.evaluateProductReturn(
+    //   resolvedProductIdentifier,
+    //   normalizedReturnReason
+    // );
 
     Response response = new Response();
-    response.evaluation = evaluation;
+    // response.evaluation = evaluation;
 
-    if (evaluation == null) {
-      response.success = false;
-      response.status = 'EVALUATION_FAILED';
-      response.primaryMessage = '返品手続きを進めることができませんでした。お手数ですが、再度お試しください。';
-      return response;
-    }
+    // if (evaluation == null) {
+    //   response.success = false;
+    //   response.status = 'EVALUATION_FAILED';
+    //   response.primaryMessage = '返品手続きを進めることができませんでした。お手数ですが、再度お試しください。';
+    //   return response;
+    // }
 
-    if (
-      !(evaluation.productFound && evaluation.isReturnable && evaluation.reasonAccepted)
-    ) {
-      response.success = false;
-      response.status = evaluation.status;
-      response.primaryMessage = evaluation.primaryMessage;
-      response.secondaryMessage = evaluation.secondaryMessage;
-      return response;
-    }
+    // if (
+    //   !(evaluation.productFound && evaluation.isReturnable && evaluation.reasonAccepted)
+    // ) {
+    //   response.success = false;
+    //   response.status = evaluation.status;
+    //   response.primaryMessage = evaluation.primaryMessage;
+    //   response.secondaryMessage = evaluation.secondaryMessage;
+    //   return response;
+    // }
 
     ReturnOrderOutcome outcome = createReturnOrder(
       normalizedOrderNumber,
@@ -691,6 +691,7 @@ public with sharing class ReturnOrderProcessingService {
   }
 
   private static String extractReturnOrderNumber(SObject returnOrder) {
+    system.debug('Return Order Record: ' + returnOrder);
     if (returnOrder == null) {
       return null;
     }
