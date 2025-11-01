@@ -55,11 +55,29 @@ public with sharing class ReturnOrderProcessingService {
     String errorMessage;
   }
 
+  private static Response buildErrorResponse(
+    String status,
+    String primaryMessage,
+    String secondaryMessage
+  ) {
+    Response response = new Response();
+    response.success = false;
+    response.status = status;
+    response.primaryMessage = primaryMessage;
+    response.secondaryMessage = secondaryMessage;
+    response.returnOrderNumber = null;
+    response.caseNumber = null;
+    response.evaluation = null;
+    return response;
+  }
+
   @AuraEnabled
   public static Response processReturn(Request request) {
     if (request == null) {
-      throw new AuraHandledException(
-        '返品手続きを進めるには注文情報が必要です。'
+      return buildErrorResponse(
+        'INVALID_REQUEST',
+        '返品手続きを進めるには注文情報が必要です。',
+        null
       );
     }
 
@@ -79,11 +97,15 @@ public with sharing class ReturnOrderProcessingService {
       : null;
     Decimal quantity = request.quantity;
 
-    validateInputs(
+    String validationError = validateInputs(
       normalizedOrderNumber,
       resolvedProductIdentifier,
       quantity
     );
+
+    if (validationError != null) {
+      return buildErrorResponse('INVALID_INPUT', validationError, null);
+    }
 
     ReturnEligibilityService.EvaluationResult evaluation = ReturnEligibilityService.evaluateProductReturn(
       resolvedProductIdentifier,
@@ -144,9 +166,13 @@ public with sharing class ReturnOrderProcessingService {
   )
   public static List<Response> processReturnFromFlow(List<Request> requests) {
     if (requests == null || requests.isEmpty()) {
-      throw new AuraHandledException(
-        '返品手続きを進めるには注文情報が必要です。'
-      );
+      return new List<Response>{
+        buildErrorResponse(
+          'INVALID_REQUEST',
+          '返品手続きを進めるには注文情報が必要です。',
+          null
+        )
+      };
     }
 
     List<Response> responses = new List<Response>();
@@ -157,28 +183,24 @@ public with sharing class ReturnOrderProcessingService {
     return responses;
   }
 
-  private static void validateInputs(
+  private static String validateInputs(
     String orderNumber,
     String productIdentifier,
     Decimal quantity
   ) {
     if (String.isBlank(orderNumber)) {
-      throw new AuraHandledException(
-        '返品手続きを進めるには注文番号が必要です。'
-      );
+      return '返品手続きを進めるには注文番号が必要です。';
     }
 
-    if (!String.isBlank(productIdentifier)) {
-      throw new AuraHandledException(
-        '返品手続きを進めるには商品情報が必要です。'
-      );
+    if (String.isBlank(productIdentifier)) {
+      return '返品手続きを進めるには商品情報が必要です。';
     }
 
     if (quantity == null || quantity <= 0) {
-      throw new AuraHandledException(
-        '返品数量は1以上の数値を指定してください。'
-      );
+      return '返品数量は1以上の数値を指定してください。';
     }
+
+    return null;
   }
 
   private static String normalizeProductIdentifier(String input) {
@@ -256,15 +278,26 @@ public with sharing class ReturnOrderProcessingService {
     }
 
     try {
-      SObject returnOrder = buildReturnOrderRecord(orderRecord, returnReason);
+      SObject returnOrder = buildReturnOrderRecord(
+        orderRecord,
+        returnReason,
+        outcome
+      );
+      if (returnOrder == null) {
+        return outcome;
+      }
       insert returnOrder;
 
       SObject returnOrderLineItem = buildReturnOrderLineItem(
         returnOrder,
         orderItemRecord,
         quantity,
-        returnReason
+        returnReason,
+        outcome
       );
+      if (returnOrderLineItem == null) {
+        return outcome;
+      }
       insert returnOrderLineItem;
 
       SObject adjustment = buildReturnOrderLineItemAdjustment(
@@ -292,6 +325,16 @@ public with sharing class ReturnOrderProcessingService {
     }
 
     return outcome;
+  }
+
+  private static void setOutcomeError(
+    ReturnOrderOutcome outcome,
+    String message
+  ) {
+    if (outcome == null || !String.isBlank(outcome.errorMessage)) {
+      return;
+    }
+    outcome.errorMessage = message;
   }
 
   private static Order findOrder(String orderNumber) {
@@ -364,18 +407,22 @@ public with sharing class ReturnOrderProcessingService {
 
   private static SObject buildReturnOrderRecord(
     Order orderRecord,
-    String returnReason
+    String returnReason,
+    ReturnOrderOutcome outcome
   ) {
     Schema.SObjectType typeInfo = Schema.getGlobalDescribe().get('ReturnOrder');
     if (typeInfo == null) {
-      throw new AuraHandledException(
+      setOutcomeError(
+        outcome,
         'Return Order オブジェクトが組織で利用できません。'
       );
+      return null;
     }
 
     Schema.DescribeSObjectResult describe = typeInfo.getDescribe();
     if (!describe.isCreateable()) {
-      throw new AuraHandledException('Return Order の作成権限がありません。');
+      setOutcomeError(outcome, 'Return Order の作成権限がありません。');
+      return null;
     }
 
     SObject record = typeInfo.newSObject();
@@ -394,21 +441,26 @@ public with sharing class ReturnOrderProcessingService {
     SObject returnOrder,
     OrderItem orderItem,
     Decimal quantity,
-    String returnReason
+    String returnReason,
+    ReturnOrderOutcome outcome
   ) {
     Schema.SObjectType typeInfo = Schema.getGlobalDescribe()
       .get('ReturnOrderLineItem');
     if (typeInfo == null) {
-      throw new AuraHandledException(
+      setOutcomeError(
+        outcome,
         'Return Order Line Item オブジェクトが組織で利用できません。'
       );
+      return null;
     }
 
     Schema.DescribeSObjectResult describe = typeInfo.getDescribe();
     if (!describe.isCreateable()) {
-      throw new AuraHandledException(
+      setOutcomeError(
+        outcome,
         'Return Order Line Item の作成権限がありません。'
       );
+      return null;
     }
 
     SObject record = typeInfo.newSObject();
