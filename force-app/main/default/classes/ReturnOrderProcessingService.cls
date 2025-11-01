@@ -80,9 +80,7 @@ public with sharing class ReturnOrderProcessingService {
     }
 
     if (
-      !(Boolean.TRUE.equals(evaluation.productFound) &&
-      Boolean.TRUE.equals(evaluation.isReturnable) &&
-      Boolean.TRUE.equals(evaluation.reasonAccepted))
+      !(evaluation.productFound && evaluation.isReturnable && evaluation.reasonAccepted)
     ) {
       response.success = false;
       response.status = evaluation.status;
@@ -144,11 +142,11 @@ public with sharing class ReturnOrderProcessingService {
   }
 
   private static String buildSuccessMessage(String returnOrderNumber) {
-    String number = String.isBlank(returnOrderNumber)
+    String orderNumber = String.isBlank(returnOrderNumber)
       ? '不明'
       : returnOrderNumber;
     return '返品手続きが完了しました。返品注文番号は『' +
-      number +
+      orderNumber +
       '』です。この番号をお控えください。担当者が確認次第、メールにてご連絡いたします。';
   }
 
@@ -549,9 +547,9 @@ public with sharing class ReturnOrderProcessingService {
         .fields.getMap()
         .containsKey('ReturnOrderNumber')
     ) {
-      String number = (String) returnOrder.get('ReturnOrderNumber');
-      if (!String.isBlank(number)) {
-        return number;
+      String orderNumber = (String) returnOrder.get('ReturnOrderNumber');
+      if (!String.isBlank(orderNumber)) {
+        return orderNumber;
       }
     }
 
