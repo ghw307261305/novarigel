@@ -54,7 +54,7 @@ public with sharing class ReturnOrderProcessingService {
     String normalizedOrderNumber = request.orderNumber != null
       ? request.orderNumber.trim()
       : null;
-    String normalizedProductCode = request.productCode != null
+    String normalizedProductIdentifier = request.productCode != null
       ? request.productCode.trim()
       : null;
     String normalizedReturnReason = request.returnReason != null
@@ -62,10 +62,10 @@ public with sharing class ReturnOrderProcessingService {
       : null;
     Decimal quantity = request.quantity;
 
-    validateInputs(normalizedOrderNumber, normalizedProductCode, quantity);
+    validateInputs(normalizedOrderNumber, normalizedProductIdentifier, quantity);
 
     ReturnEligibilityService.EvaluationResult evaluation = ReturnEligibilityService.evaluateProductReturn(
-      normalizedProductCode,
+      normalizedProductIdentifier,
       normalizedReturnReason
     );
 
@@ -93,7 +93,7 @@ public with sharing class ReturnOrderProcessingService {
 
     ReturnOrderOutcome outcome = createReturnOrder(
       normalizedOrderNumber,
-      normalizedProductCode,
+      normalizedProductIdentifier,
       quantity,
       normalizedReturnReason
     );
@@ -121,7 +121,7 @@ public with sharing class ReturnOrderProcessingService {
 
   private static void validateInputs(
     String orderNumber,
-    String productCode,
+    String productIdentifier,
     Decimal quantity
   ) {
     if (String.isBlank(orderNumber)) {
@@ -130,9 +130,9 @@ public with sharing class ReturnOrderProcessingService {
       );
     }
 
-    if (String.isBlank(productCode)) {
+    if (String.isBlank(productIdentifier)) {
       throw new AuraHandledException(
-        '返品手続きを進めるには商品コードが必要です。'
+        '返品手続きを進めるには商品情報が必要です。'
       );
     }
 
@@ -154,7 +154,7 @@ public with sharing class ReturnOrderProcessingService {
 
   private static ReturnOrderOutcome createReturnOrder(
     String orderNumber,
-    String productCode,
+    String productIdentifier,
     Decimal quantity,
     String returnReason
   ) {
@@ -171,7 +171,10 @@ public with sharing class ReturnOrderProcessingService {
       return outcome;
     }
 
-    OrderItem orderItemRecord = findOrderItem(orderRecord.Id, productCode);
+    OrderItem orderItemRecord = findOrderItem(
+      orderRecord.Id,
+      productIdentifier
+    );
     if (orderItemRecord == null) {
       outcome.errorMessage = '指定された商品はこの注文に含まれていません。';
       return outcome;
@@ -231,8 +234,11 @@ public with sharing class ReturnOrderProcessingService {
     return orders.isEmpty() ? null : orders[0];
   }
 
-  private static OrderItem findOrderItem(Id orderId, String productCode) {
-    if (orderId == null || String.isBlank(productCode)) {
+  private static OrderItem findOrderItem(
+    Id orderId,
+    String productIdentifier
+  ) {
+    if (orderId == null || String.isBlank(productIdentifier)) {
       return null;
     }
 
@@ -243,9 +249,13 @@ public with sharing class ReturnOrderProcessingService {
         UnitPrice,
         PricebookEntryId,
         Product2Id,
-        Product2.ProductCode
+        Product2.ProductCode,
+        Product2.Name
       FROM OrderItem
-      WHERE OrderId = :orderId AND Product2.ProductCode = :productCode
+      WHERE
+        OrderId = :orderId AND
+        (Product2.ProductCode = :productIdentifier OR
+        Product2.Name = :productIdentifier)
       LIMIT 1
     ];
 
