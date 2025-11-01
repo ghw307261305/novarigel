@@ -1,38 +1,49 @@
 public with sharing class ReturnOrderProcessingService {
   public class Request {
     @AuraEnabled
+    @InvocableVariable
     public String orderNumber;
 
     @AuraEnabled
+    @InvocableVariable
     public String productCode;
 
     @AuraEnabled
+    @InvocableVariable
     public Decimal quantity;
 
     @AuraEnabled
+    @InvocableVariable
     public String returnReason;
   }
 
   public class Response {
     @AuraEnabled
+    @InvocableVariable
     public Boolean success;
 
     @AuraEnabled
+    @InvocableVariable
     public String status;
 
     @AuraEnabled
+    @InvocableVariable
     public String primaryMessage;
 
     @AuraEnabled
+    @InvocableVariable
     public String secondaryMessage;
 
     @AuraEnabled
+    @InvocableVariable
     public String returnOrderNumber;
 
     @AuraEnabled
+    @InvocableVariable
     public String caseNumber;
 
     @AuraEnabled
+    @InvocableVariable
     public ReturnEligibilityService.EvaluationResult evaluation;
   }
 
@@ -80,7 +91,9 @@ public with sharing class ReturnOrderProcessingService {
     }
 
     if (
-      !(evaluation.productFound && evaluation.isReturnable && evaluation.reasonAccepted)
+      !(Boolean.TRUE.equals(evaluation.productFound) &&
+      Boolean.TRUE.equals(evaluation.isReturnable) &&
+      Boolean.TRUE.equals(evaluation.reasonAccepted))
     ) {
       response.success = false;
       response.status = evaluation.status;
@@ -117,6 +130,25 @@ public with sharing class ReturnOrderProcessingService {
     return response;
   }
 
+  @InvocableMethod(
+    label = '返品注文処理',
+    description = 'Flow から返品注文を作成します。'
+  )
+  public static List<Response> processReturnFromFlow(List<Request> requests) {
+    if (requests == null || requests.isEmpty()) {
+      throw new AuraHandledException(
+        '返品手続きを進めるには注文情報が必要です。'
+      );
+    }
+
+    List<Response> responses = new List<Response>();
+    for (Request request : requests) {
+      responses.add(processReturn(request));
+    }
+
+    return responses;
+  }
+
   private static void validateInputs(
     String orderNumber,
     String productIdentifier,
@@ -142,11 +174,11 @@ public with sharing class ReturnOrderProcessingService {
   }
 
   private static String buildSuccessMessage(String returnOrderNumber) {
-    String orderNumber = String.isBlank(returnOrderNumber)
+    String number = String.isBlank(returnOrderNumber)
       ? '不明'
       : returnOrderNumber;
     return '返品手続きが完了しました。返品注文番号は『' +
-      orderNumber +
+      number +
       '』です。この番号をお控えください。担当者が確認次第、メールにてご連絡いたします。';
   }
 
@@ -547,9 +579,9 @@ public with sharing class ReturnOrderProcessingService {
         .fields.getMap()
         .containsKey('ReturnOrderNumber')
     ) {
-      String orderNumber = (String) returnOrder.get('ReturnOrderNumber');
-      if (!String.isBlank(orderNumber)) {
-        return orderNumber;
+      String number = (String) returnOrder.get('ReturnOrderNumber');
+      if (!String.isBlank(number)) {
+        return number;
       }
     }
 
