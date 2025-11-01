@@ -109,6 +109,48 @@ private class ReturnOrderProcessingServiceTest {
   }
 
   @IsTest
+  static void testProcessReturnSuccessWithProductName() {
+    TestData data = TestData.setup();
+
+    ReturnOrderProcessingService.Request request = new ReturnOrderProcessingService.Request();
+    request.orderNumber = data.orderNumber;
+    request.productCode = data.returnableProductName;
+    request.quantity = 1;
+    request.returnReason = '  糸のほつれがありました  ';
+
+    Test.startTest();
+    ReturnOrderProcessingService.Response response = ReturnOrderProcessingService.processReturn(
+      request
+    );
+    Test.stopTest();
+
+    System.assertEquals(true, response.success, 'Response should indicate success.');
+    System.assertEquals(
+      'RETURN_ORDER_CREATED',
+      response.status,
+      'Status should indicate creation.'
+    );
+
+    ReturnOrder createdReturnOrder = [
+      SELECT Id
+      FROM ReturnOrder
+      WHERE OrderId = :data.orderId
+      LIMIT 1
+    ];
+
+    System.assertNotEquals(null, createdReturnOrder, 'Return order should be created.');
+
+    List<ReturnOrderLineItem> lineItems = [
+      SELECT Id, Quantity
+      FROM ReturnOrderLineItem
+      WHERE ReturnOrderId = :createdReturnOrder.Id
+    ];
+
+    System.assertEquals(1, lineItems.size(), 'A line item should be created.');
+    System.assertEquals(1, lineItems[0].Quantity, 'Line item quantity should match.');
+  }
+
+  @IsTest
   static void testProcessReturnFailureWhenOrderMissing() {
     TestData data = TestData.setup();
 
@@ -228,8 +270,8 @@ private class ReturnOrderProcessingServiceTest {
       System.assert(false, 'Missing product code should throw an exception.');
     } catch (AuraHandledException e) {
       System.assert(
-        e.getMessage().contains('商品コード'),
-        'Message should mention product code.'
+        e.getMessage().contains('商品情報'),
+        'Message should mention product identifier.'
       );
     }
 
@@ -253,6 +295,7 @@ private class ReturnOrderProcessingServiceTest {
   private class TestData {
     Id policyId;
     String returnableProductCode;
+    String returnableProductName;
     Id orderId;
     String orderNumber;
 
@@ -303,6 +346,8 @@ private class ReturnOrderProcessingServiceTest {
 
       this.orderId = orderRecord.Id;
       this.orderNumber = orderRecord.OrderNumber;
+      this.returnableProductCode = baseProduct.ProductCode;
+      this.returnableProductName = baseProduct.Name;
 
       StorePolicy__c policy = new StorePolicy__c(
         Name = 'Defective Only Return',
@@ -373,7 +418,6 @@ private class ReturnOrderProcessingServiceTest {
       );
       insert alternativeEntry2;
 
-      this.returnableProductCode = baseProduct.ProductCode;
     }
 
     private String getDefaultOrderStatus() {
