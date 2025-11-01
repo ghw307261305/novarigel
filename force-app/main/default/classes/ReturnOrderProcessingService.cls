@@ -6,7 +6,7 @@ public with sharing class ReturnOrderProcessingService {
 
     @AuraEnabled
     @InvocableVariable
-    public String productCode;
+    public String productIdentifier;
 
     @AuraEnabled
     @InvocableVariable
@@ -65,18 +65,27 @@ public with sharing class ReturnOrderProcessingService {
     String normalizedOrderNumber = request.orderNumber != null
       ? request.orderNumber.trim()
       : null;
-    String normalizedProductIdentifier = request.productCode != null
-      ? request.productCode.trim()
-      : null;
+    String normalizedProductIdentifier = normalizeProductIdentifier(
+      request.productIdentifier
+    );
+    Product2 resolvedProduct = findProductRecord(normalizedProductIdentifier);
+    String resolvedProductIdentifier = resolveProductIdentifier(
+      normalizedProductIdentifier,
+      resolvedProduct
+    );
     String normalizedReturnReason = request.returnReason != null
       ? request.returnReason.trim()
       : null;
     Decimal quantity = request.quantity;
 
-    validateInputs(normalizedOrderNumber, normalizedProductIdentifier, quantity);
+    validateInputs(
+      normalizedOrderNumber,
+      resolvedProductIdentifier,
+      quantity
+    );
 
     ReturnEligibilityService.EvaluationResult evaluation = ReturnEligibilityService.evaluateProductReturn(
-      normalizedProductIdentifier,
+      resolvedProductIdentifier,
       normalizedReturnReason
     );
 
@@ -104,7 +113,8 @@ public with sharing class ReturnOrderProcessingService {
 
     ReturnOrderOutcome outcome = createReturnOrder(
       normalizedOrderNumber,
-      normalizedProductIdentifier,
+      resolvedProductIdentifier,
+      resolvedProduct != null ? resolvedProduct.Id : null,
       quantity,
       normalizedReturnReason
     );
@@ -173,6 +183,41 @@ public with sharing class ReturnOrderProcessingService {
     }
   }
 
+  private static String normalizeProductIdentifier(String input) {
+    return String.isBlank(input) ? null : input.trim();
+  }
+
+  private static Product2 findProductRecord(String identifier) {
+    if (String.isBlank(identifier)) {
+      return null;
+    }
+
+    List<Product2> products = [
+      SELECT Id, Name, ProductCode
+      FROM Product2
+      WHERE IsActive = TRUE AND (ProductCode = :identifier OR Name = :identifier)
+      LIMIT 1
+    ];
+
+    return products.isEmpty() ? null : products[0];
+  }
+
+  private static String resolveProductIdentifier(
+    String identifier,
+    Product2 productRecord
+  ) {
+    if (productRecord != null) {
+      if (!String.isBlank(productRecord.ProductCode)) {
+        return productRecord.ProductCode;
+      }
+      if (!String.isBlank(productRecord.Name)) {
+        return productRecord.Name;
+      }
+    }
+
+    return identifier;
+  }
+
   private static String buildSuccessMessage(String returnOrderNumber) {
     String number = String.isBlank(returnOrderNumber)
       ? '不明'
@@ -185,6 +230,7 @@ public with sharing class ReturnOrderProcessingService {
   private static ReturnOrderOutcome createReturnOrder(
     String orderNumber,
     String productIdentifier,
+    Id productId,
     Decimal quantity,
     String returnReason
   ) {
@@ -203,7 +249,8 @@ public with sharing class ReturnOrderProcessingService {
 
     OrderItem orderItemRecord = findOrderItem(
       orderRecord.Id,
-      productIdentifier
+      productIdentifier,
+      productId
     );
     if (orderItemRecord == null) {
       outcome.errorMessage = '指定された商品はこの注文に含まれていません。';
@@ -266,9 +313,34 @@ public with sharing class ReturnOrderProcessingService {
 
   private static OrderItem findOrderItem(
     Id orderId,
-    String productIdentifier
+    String productIdentifier,
+    Id productId
   ) {
-    if (orderId == null || String.isBlank(productIdentifier)) {
+    if (orderId == null) {
+      return null;
+    }
+
+    if (productId != null) {
+      List<OrderItem> itemsByProduct = [
+        SELECT
+          Id,
+          Quantity,
+          UnitPrice,
+          PricebookEntryId,
+          Product2Id,
+          Product2.ProductCode,
+          Product2.Name
+        FROM OrderItem
+        WHERE OrderId = :orderId AND Product2Id = :productId
+        LIMIT 1
+      ];
+
+      if (!itemsByProduct.isEmpty()) {
+        return itemsByProduct[0];
+      }
+    }
+
+    if (String.isBlank(productIdentifier)) {
       return null;
     }
 
