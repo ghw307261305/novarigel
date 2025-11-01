@@ -317,6 +317,16 @@ private class ReturnOrderProcessingServiceTest {
     }
   }
 
+  private static ReturnOrderProcessingService.ProductInformation buildProductInfo(
+    String productCode,
+    String productName
+  ) {
+    ReturnOrderProcessingService.ProductInformation info = new ReturnOrderProcessingService.ProductInformation();
+    info.productCode = productCode;
+    info.productName = productName;
+    return info;
+  }
+
   private class TestData {
     Id policyId;
     String returnableProductCode;

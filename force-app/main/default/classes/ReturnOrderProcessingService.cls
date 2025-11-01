@@ -1,4 +1,14 @@
 public with sharing class ReturnOrderProcessingService {
+  public class ProductInformation {
+    @AuraEnabled
+    @InvocableVariable
+    public String productCode;
+
+    @AuraEnabled
+    @InvocableVariable
+    public String productName;
+  }
+
   public class Request {
     @AuraEnabled
     @InvocableVariable
@@ -161,6 +171,7 @@ public with sharing class ReturnOrderProcessingService {
 
   private static void validateInputs(
     String orderNumber,
+    ProductInformation productInfo,
     String productIdentifier,
     Decimal quantity
   ) {
@@ -170,7 +181,7 @@ public with sharing class ReturnOrderProcessingService {
       );
     }
 
-    if (String.isBlank(productIdentifier)) {
+    if (!hasProductInformation(productInfo) && String.isBlank(productIdentifier)) {
       throw new AuraHandledException(
         '返品手続きを進めるには商品情報が必要です。'
       );
