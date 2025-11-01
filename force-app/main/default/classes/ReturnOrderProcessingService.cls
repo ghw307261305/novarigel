@@ -708,6 +708,27 @@ public with sharing class ReturnOrderProcessingService {
       }
     }
 
+    Id returnOrderId = (Id) returnOrder.get('Id');
+    if (returnOrderId != null) {
+      List<ReturnOrder> queriedReturnOrders = [
+        SELECT ReturnOrderNumber, Name
+        FROM ReturnOrder
+        WHERE Id = :returnOrderId
+        LIMIT 1
+      ];
+
+      if (!queriedReturnOrders.isEmpty()) {
+        ReturnOrder queriedReturnOrder = queriedReturnOrders[0];
+        if (!String.isBlank(queriedReturnOrder.ReturnOrderNumber)) {
+          return queriedReturnOrder.ReturnOrderNumber;
+        }
+
+        if (!String.isBlank(queriedReturnOrder.Name)) {
+          return queriedReturnOrder.Name;
+        }
+      }
+    }
+
     if (
       returnOrder.getSObjectType()
         .getDescribe()
@@ -720,6 +741,6 @@ public with sharing class ReturnOrderProcessingService {
       }
     }
 
-    return (String) returnOrder.get('Id');
+    return returnOrderId != null ? (String) returnOrderId : null;
   }
 }
