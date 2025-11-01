@@ -711,7 +711,7 @@ public with sharing class ReturnOrderProcessingService {
     Id returnOrderId = (Id) returnOrder.get('Id');
     if (returnOrderId != null) {
       List<ReturnOrder> queriedReturnOrders = [
-        SELECT ReturnOrderNumber, Name
+        SELECT ReturnOrderNumber 
         FROM ReturnOrder
         WHERE Id = :returnOrderId
         LIMIT 1
@@ -722,22 +722,6 @@ public with sharing class ReturnOrderProcessingService {
         if (!String.isBlank(queriedReturnOrder.ReturnOrderNumber)) {
           return queriedReturnOrder.ReturnOrderNumber;
         }
-
-        if (!String.isBlank(queriedReturnOrder.Name)) {
-          return queriedReturnOrder.Name;
-        }
-      }
-    }
-
-    if (
-      returnOrder.getSObjectType()
-        .getDescribe()
-        .fields.getMap()
-        .containsKey('Name')
-    ) {
-      String name = (String) returnOrder.get('Name');
-      if (!String.isBlank(name)) {
-        return name;
       }
     }
 
