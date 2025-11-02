@@ -301,6 +301,7 @@ public with sharing class ReturnOrderProcessingService {
       insert returnOrderLineItem;
 
       SObject adjustment = buildReturnOrderLineItemAdjustment(
+        returnOrder,
         returnOrderLineItem
       );
       if (adjustment != null) {
@@ -308,6 +309,7 @@ public with sharing class ReturnOrderProcessingService {
       }
 
       SObject tax = buildReturnOrderLineItemTax(
+        returnOrder,
         returnOrderLineItem,
         orderItemRecord,
         quantity
@@ -491,10 +493,11 @@ public with sharing class ReturnOrderProcessingService {
   }
 
   private static SObject buildReturnOrderLineItemAdjustment(
+    SObject returnOrder,
     SObject returnOrderLineItem
   ) {
     Schema.SObjectType typeInfo = Schema.getGlobalDescribe()
-      .get('ReturnOrderLineItemAdjustment');
+      .get('ReturnOrderItemAdjustment');
     if (typeInfo == null) {
       return null;
     }
@@ -513,6 +516,14 @@ public with sharing class ReturnOrderProcessingService {
       'ReturnOrderLineItemId',
       (Id) returnOrderLineItem.get('Id')
     );
+
+    setReferenceField(
+      record,
+      fields,
+      'ReturnOrderId',
+      (Id) returnOrder.get('Id')
+    );
+
     setReferenceField(record, fields, 'OwnerId', UserInfo.getUserId());
     setDecimalField(record, fields, 'Amount', 0);
 
@@ -521,12 +532,13 @@ public with sharing class ReturnOrderProcessingService {
   }
 
   private static SObject buildReturnOrderLineItemTax(
+    SObject returnOrder,
     SObject returnOrderLineItem,
     OrderItem orderItem,
     Decimal quantity
   ) {
     Schema.SObjectType typeInfo = Schema.getGlobalDescribe()
-      .get('ReturnOrderLineItemTax');
+      .get('ReturnOrderItemTax');
     if (typeInfo == null) {
       return null;
     }
@@ -550,6 +562,14 @@ public with sharing class ReturnOrderProcessingService {
       'ReturnOrderLineItemId',
       (Id) returnOrderLineItem.get('Id')
     );
+
+    setReferenceField(
+      record,
+      fields,
+      'ReturnOrderId',
+      (Id) returnOrder.get('Id')
+    );
+
     setReferenceField(record, fields, 'OwnerId', UserInfo.getUserId());
     setDecimalField(record, fields, 'TaxAmount', taxAmount);
     setDecimalField(record, fields, 'TaxRate', taxRate);
@@ -691,7 +711,6 @@ public with sharing class ReturnOrderProcessingService {
   }
 
   private static String extractReturnOrderNumber(SObject returnOrder) {
-    system.debug('Return Order Record: ' + returnOrder);
     if (returnOrder == null) {
       return null;
     }
