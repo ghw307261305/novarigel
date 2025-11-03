@@ -161,6 +161,36 @@ export default class AgentforceChat extends LightningElement {
         }
     }
 
+    @api
+    async applySessionResult(sessionResult) {
+        const normalizedResult = this.normalizeSessionResult(sessionResult);
+        if (!normalizedResult) {
+            return;
+        }
+
+        const sessionId =
+            normalizedResult.sessionId || this.extractSessionId(normalizedResult);
+        const startEndpoint = this.resolvedStartSessionEndpoint;
+        const messagesEndpoint =
+            normalizedResult.messagesUrl ||
+            this.resolveMessagesEndpoint(normalizedResult, sessionId, startEndpoint);
+
+        if (sessionId) {
+            this.sessionId = sessionId;
+        }
+
+        if (messagesEndpoint) {
+            this.messagesEndpoint = messagesEndpoint;
+        }
+
+        if (normalizedResult.externalSessionKey) {
+            this.sessionKey = normalizedResult.externalSessionKey;
+        }
+
+        this.appendInitialMessagesFromStartSession(normalizedResult);
+        this.ensureDefaultNoticeMessage();
+    }
+
     async handleSend() {
         const draft = this.draftMessage;
         this.draftMessage = '';
@@ -226,6 +256,32 @@ export default class AgentforceChat extends LightningElement {
     handleAgentforceError(error) {
         this.errorMessage = this.normalizeError(error);
         this.updateStatusMessage(this.errorMessage, 'error', true);
+    }
+
+    normalizeSessionResult(result) {
+        if (!result || typeof result !== 'object') {
+            return undefined;
+        }
+
+        let normalized;
+        try {
+            normalized = JSON.parse(JSON.stringify(result));
+        } catch (error) {
+            normalized = { ...result };
+        }
+
+        if (result.data && typeof result.data === 'object') {
+            normalized.data = { ...result.data };
+        }
+
+        if (!normalized.data && typeof normalized.body === 'string') {
+            const parsedBody = this.safeParseJson(normalized.body);
+            if (parsedBody && typeof parsedBody === 'object') {
+                normalized.data = parsedBody;
+            }
+        }
+
+        return normalized;
     }
 
     async sendMessageToAgentforce(content) {

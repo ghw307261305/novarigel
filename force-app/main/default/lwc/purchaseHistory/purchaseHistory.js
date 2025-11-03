@@ -1,5 +1,6 @@
 import { LightningElement, api } from "lwc";
 import getPurchaseHistory from "@salesforce/apex/PurchaseHistoryController.getPurchaseHistory";
+import startAgentforceSession from "@salesforce/apex/AgentforceChatController.startSession";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 
 export default class PurchaseHistory extends LightningElement {
@@ -10,6 +11,7 @@ export default class PurchaseHistory extends LightningElement {
   isAgentforceChatVisible = false;
   isAgentforceChatStarting = false;
   isAgentforceChatSessionReady = false;
+  agentforceSessionResult;
 
   @api
   set testOrders(value) {
@@ -91,22 +93,42 @@ export default class PurchaseHistory extends LightningElement {
       return;
     }
 
-    await this.startAgentforceChat(orderNumber);
+    try {
+      await this.startAgentforceChat(orderNumber);
 
-    this.dispatchEvent(
-      new ShowToastEvent({
-        title: "返品・交換サポート",
-        message: `注文番号: ${orderNumber}のサポートチャットを開始しました。`,
-        variant: "success"
-      })
-    );
+      this.dispatchEvent(
+        new ShowToastEvent({
+          title: "返品・交換サポート",
+          message: `注文番号: ${orderNumber}のサポートチャットを開始しました。`,
+          variant: "success"
+        })
+      );
+    } catch (error) {
+      const message = this.extractErrorMessage(
+        error,
+        "サポートチャットの開始に失敗しました。時間をおいて再度お試しください。"
+      );
+
+      this.dispatchEvent(
+        new ShowToastEvent({
+          title: "返品・交換サポート",
+          message,
+          variant: "error"
+        })
+      );
+    }
   }
 
   async startAgentforceChat(orderNumber) {
     this.isAgentforceChatVisible = true;
     this.isAgentforceChatStarting = true;
+    this.isAgentforceChatSessionReady = false;
+    this.agentforceSessionResult = undefined;
 
     try {
+      const sessionResult = await this.requestAgentforceSession(orderNumber);
+      this.agentforceSessionResult = sessionResult;
+
       if (!this.isAgentforceChatSessionReady) {
         await this.delay(this.chatLaunchDelay);
         this.isAgentforceChatSessionReady = true;
@@ -114,10 +136,135 @@ export default class PurchaseHistory extends LightningElement {
 
       await this.waitForRender();
       await this.prepareAgentforceChat(orderNumber);
+    } catch (error) {
+      this.isAgentforceChatVisible = false;
+      this.agentforceSessionResult = undefined;
+      throw error;
     } finally {
       this.isAgentforceChatStarting = false;
       await this.waitForRender();
     }
+  }
+
+  async requestAgentforceSession(orderNumber) {
+    const payload = this.buildAgentforceSessionPayload(orderNumber);
+    const result = await startAgentforceSession({ payload });
+    return this.normalizeAgentforceSessionResult(result);
+  }
+
+  buildAgentforceSessionPayload(orderNumber) {
+    const payload = {};
+    const normalizedOrderNumber = this.normalizeOrderNumber(orderNumber);
+
+    if (normalizedOrderNumber) {
+      payload.context = {
+        orderNumber: normalizedOrderNumber
+      };
+    }
+
+    return payload;
+  }
+
+  normalizeAgentforceSessionResult(result) {
+    if (!result) {
+      return undefined;
+    }
+
+    const normalized = this.cloneSerializable(result);
+
+    if (normalized && normalized.data && typeof normalized.data !== "object") {
+      normalized.data = this.parseJsonSafely(normalized.data);
+    }
+
+    if (!normalized?.data && typeof normalized?.body === "string") {
+      const parsed = this.parseJsonSafely(normalized.body);
+      if (parsed && typeof parsed === "object") {
+        normalized.data = parsed;
+      }
+    }
+
+    return normalized;
+  }
+
+  cloneSerializable(value) {
+    if (value === null || value === undefined) {
+      return value;
+    }
+
+    if (typeof structuredClone === "function") {
+      try {
+        return structuredClone(value);
+      } catch (error) {
+        // Ignore structured clone errors and fall back to other strategies.
+      }
+    }
+
+    if (
+      typeof window !== "undefined" &&
+      typeof window.structuredClone === "function"
+    ) {
+      try {
+        return window.structuredClone(value);
+      } catch (error) {
+        // Ignore structured clone errors and fall back to JSON parsing.
+      }
+    }
+
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch (error) {
+      return value;
+    }
+  }
+
+  parseJsonSafely(value) {
+    if (!value || typeof value !== "string") {
+      return undefined;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return undefined;
+    }
+  }
+
+  extractErrorMessage(error, fallbackMessage) {
+    if (!error) {
+      return fallbackMessage;
+    }
+
+    if (typeof error === "string" && error.trim()) {
+      return error.trim();
+    }
+
+    if (error.body) {
+      if (typeof error.body === "string" && error.body.trim()) {
+        return error.body.trim();
+      }
+
+      if (
+        typeof error.body.message === "string" &&
+        error.body.message.trim()
+      ) {
+        return error.body.message.trim();
+      }
+    }
+
+    if (typeof error.message === "string" && error.message.trim()) {
+      return error.message.trim();
+    }
+
+    return fallbackMessage;
+  }
+
+  normalizeOrderNumber(orderNumber) {
+    if (orderNumber === null || orderNumber === undefined) {
+      return "";
+    }
+
+    const value = String(orderNumber).trim();
+    return value;
   }
 
   get chatLaunchDelay() {
@@ -150,6 +297,13 @@ export default class PurchaseHistory extends LightningElement {
     }
 
     try {
+      if (
+        this.agentforceSessionResult &&
+        typeof chat.applySessionResult === "function"
+      ) {
+        await chat.applySessionResult(this.agentforceSessionResult);
+      }
+
       if (typeof chat.initializeConversation === "function") {
         await chat.initializeConversation();
       }
@@ -157,10 +311,7 @@ export default class PurchaseHistory extends LightningElement {
       console.error("Failed to initialize Agentforce chat session", error);
     }
 
-    const normalizedOrderNumber =
-      orderNumber === null || orderNumber === undefined
-        ? ""
-        : String(orderNumber);
+    const normalizedOrderNumber = this.normalizeOrderNumber(orderNumber);
 
     try {
       if (typeof chat.prefillDraftMessage === "function") {
@@ -181,6 +332,7 @@ export default class PurchaseHistory extends LightningElement {
     this.isAgentforceChatVisible = false;
     this.isAgentforceChatStarting = false;
     this.isAgentforceChatSessionReady = false;
+    this.agentforceSessionResult = undefined;
   }
 
   groupHistoryByOrder(historyItems) {
