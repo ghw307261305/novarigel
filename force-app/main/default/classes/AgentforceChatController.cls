@@ -122,6 +122,11 @@ public with sharing class AgentforceChatController {
       'message' => messagePayload,
       'variables' => new List<Object>()
     };
+
+    applyConfiguredPayloadOverrides(
+      payload,
+      config != null ? config.Send_Message_Parameters__c : null
+    );
     request.setBody(JSON.serialize(payload));
 
     Http http = new Http();
@@ -267,13 +272,20 @@ public with sharing class AgentforceChatController {
       : new Map<String, Object>();
     applyDefaultStartSessionPayload(payloadToSend);
 
+    applyConfiguredPayloadOverrides(
+      payloadToSend,
+      config != null ? config.Start_Session_Parameters__c : null
+    );
+
     String sessionKeyFromPayload = payloadToSend.containsKey(
         'externalSessionKey'
       ) && payloadToSend.get('externalSessionKey') instanceof String
       ? (String) payloadToSend.get('externalSessionKey')
       : null;
 
-    System.debug('Agentforce start session payload: ' + JSON.serialize(payloadToSend));
+    System.debug(
+      'Agentforce start session payload: ' + JSON.serialize(payloadToSend)
+    );
     request.setBody(JSON.serialize(payloadToSend));
 
     Http http = new Http();
@@ -446,7 +458,8 @@ public with sharing class AgentforceChatController {
       try {
         instanceConfig.put(
           'endpoint',
-          'https://orgfarm-ba397eacea-dev-ed.develop.my.salesforce.com');
+          'https://orgfarm-ba397eacea-dev-ed.develop.my.salesforce.com'
+        );
       } catch (Exception ex) {
         // If the base URL cannot be resolved we leave the endpoint unset.
       }
@@ -517,6 +530,52 @@ public with sharing class AgentforceChatController {
       streamingCapabilities.put('chunkTypes', new List<Object>{ 'Text' });
     }
     payload.put('streamingCapabilities', streamingCapabilities);
+  }
+
+  private static void applyConfiguredPayloadOverrides(
+    Map<String, Object> payload,
+    String overridesJson
+  ) {
+    if (payload == null || String.isBlank(overridesJson)) {
+      return;
+    }
+
+    try {
+      Object parsed = JSON.deserializeUntyped(overridesJson);
+      if (parsed instanceof Map<String, Object>) {
+        mergeObjectMaps(payload, (Map<String, Object>) parsed);
+      }
+    } catch (Exception ex) {
+      System.debug(
+        LoggingLevel.WARN,
+        'Agentforce payload override parsing failed: ' + ex.getMessage()
+      );
+    }
+  }
+
+  private static void mergeObjectMaps(
+    Map<String, Object> target,
+    Map<String, Object> overrides
+  ) {
+    if (target == null || overrides == null) {
+      return;
+    }
+
+    for (String key : overrides.keySet()) {
+      Object overrideValue = overrides.get(key);
+      if (
+        target.containsKey(key) &&
+        target.get(key) instanceof Map<String, Object> &&
+        overrideValue instanceof Map<String, Object>
+      ) {
+        mergeObjectMaps(
+          (Map<String, Object>) target.get(key),
+          (Map<String, Object>) overrideValue
+        );
+      } else {
+        target.put(key, overrideValue);
+      }
+    }
   }
 
   private static void enrichStartSessionResult(
