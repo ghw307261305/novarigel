@@ -8,11 +8,13 @@ jest.mock(
     const initializeConversationMock = jest.fn().mockResolvedValue();
     const prefillDraftMessageMock = jest.fn();
     const focusComposerMock = jest.fn();
+    const applySessionResultMock = jest.fn().mockResolvedValue();
     return {
       __esModule: true,
       initializeConversationMock,
       prefillDraftMessageMock,
       focusComposerMock,
+      applySessionResultMock,
       default: class AgentforceChatStub extends LightningElement {
         initializeConversation(...args) {
           return initializeConversationMock(...args);
@@ -25,6 +27,10 @@ jest.mock(
         focusComposer(...args) {
           return focusComposerMock(...args);
         }
+
+        applySessionResult(...args) {
+          return applySessionResultMock(...args);
+        }
       }
     };
   },
@@ -34,7 +40,8 @@ jest.mock(
 const {
   initializeConversationMock,
   prefillDraftMessageMock,
-  focusComposerMock
+  focusComposerMock,
+  applySessionResultMock
 } = require("c/agentforceChat");
 
 jest.mock(
@@ -44,6 +51,36 @@ jest.mock(
   }),
   { virtual: true }
 );
+
+jest.mock(
+  "@salesforce/apex/AgentforceChatController.startSession",
+  () => ({
+    default: jest.fn().mockResolvedValue({
+      sessionId: "mock-session-id",
+      messagesUrl: "https://example.com/messages",
+      externalSessionKey: "mock-session-key",
+      data: {
+        messages: [
+          {
+            type: "Inform",
+            message: "Hello. This is NovaRigel Returns Agent.",
+            id: "message-1"
+          }
+        ]
+      }
+    })
+  }),
+  { virtual: true }
+);
+
+const startSessionMock = require("@salesforce/apex/AgentforceChatController.startSession").default;
+
+async function flushPromises(iterations = 1) {
+  for (let index = 0; index < iterations; index += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await Promise.resolve();
+  }
+}
 
 describe("c-purchase-history", () => {
   afterEach(() => {
@@ -87,10 +124,11 @@ describe("c-purchase-history", () => {
 
     button.click();
 
+    await flushPromises(2);
     jest.runAllTimers();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    await flushPromises(2);
+    jest.runAllTimers();
+    await flushPromises(2);
 
     const container = element.shadowRoot.querySelector(
       ".agentforce-chat-container"
@@ -101,6 +139,23 @@ describe("c-purchase-history", () => {
 
     const chatComponent = element.shadowRoot.querySelector("c-agentforce-chat");
     expect(chatComponent).not.toBeNull();
+
+    expect(startSessionMock).toHaveBeenCalledTimes(1);
+    expect(startSessionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          context: expect.objectContaining({ orderNumber: "00012345" })
+        })
+      })
+    );
+
+    expect(applySessionResultMock).toHaveBeenCalledTimes(1);
+    expect(applySessionResultMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: "mock-session-id",
+        messagesUrl: "https://example.com/messages"
+      })
+    );
 
     expect(initializeConversationMock).toHaveBeenCalledTimes(1);
     expect(prefillDraftMessageMock).toHaveBeenCalledWith("00012345");
@@ -143,8 +198,7 @@ describe("c-purchase-history", () => {
 
     button.click();
 
-    await Promise.resolve();
-    await Promise.resolve();
+    await flushPromises(2);
 
     const container = element.shadowRoot.querySelector(
       ".agentforce-chat-container"
@@ -155,5 +209,8 @@ describe("c-purchase-history", () => {
 
     const chatComponent = element.shadowRoot.querySelector("c-agentforce-chat");
     expect(chatComponent).toBeNull();
+
+    expect(startSessionMock).not.toHaveBeenCalled();
+    expect(applySessionResultMock).not.toHaveBeenCalled();
   });
 });
