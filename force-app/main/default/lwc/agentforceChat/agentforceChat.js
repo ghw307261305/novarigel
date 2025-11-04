@@ -435,6 +435,16 @@ export default class AgentforceChat extends LightningElement {
             streamingCapabilities: {
                 chunkTypes: ['Text']
             }
+        ];
+
+        sessionConfig.featureSupport = 'Streaming';
+        sessionConfig.streamingCapabilities = {
+            chunkTypes: ['Text']
+        };
+
+        return {
+            externalSessionKey: sessionKey,
+            sessionConfig
         };
 
         const instanceEndpoint = this.resolvedInstanceEndpoint;

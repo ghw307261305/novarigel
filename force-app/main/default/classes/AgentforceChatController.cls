@@ -482,7 +482,7 @@ public with sharing class AgentforceChatController {
       payload.containsKey('instanceConfig') &&
       payload.get('instanceConfig') instanceof Map<String, Object>
     ) {
-      instanceConfig.putAll(
+      forceConfig.putAll(
         (Map<String, Object>) payload.get('instanceConfig')
       );
     }
@@ -519,6 +519,8 @@ public with sharing class AgentforceChatController {
       } catch (Exception ex) {
         // Ignore and leave timezone unset when unavailable.
       }
+    } else {
+      sessionConfig.put('tz', tzString);
     }
     if (String.isNotBlank(tzString)) {
       payload.put('tz', tzString);
@@ -576,6 +578,13 @@ public with sharing class AgentforceChatController {
 
     Map<String, Object> streamingCapabilities = new Map<String, Object>();
     if (
+      sessionConfig.containsKey('streamingCapabilities') &&
+      sessionConfig.get('streamingCapabilities') instanceof Map<String, Object>
+    ) {
+      streamingCapabilities.putAll(
+        (Map<String, Object>) sessionConfig.get('streamingCapabilities')
+      );
+    } else if (
       payload.containsKey('streamingCapabilities') &&
       payload.get('streamingCapabilities') instanceof Map<String, Object>
     ) {
