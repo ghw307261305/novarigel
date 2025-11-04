@@ -65,10 +65,6 @@ const flushPromises = () =>
             })
     );
 
-const DEFAULT_START_SESSION_NOTICE = `こんにちは。NovaRigel返品エージェントです。
-ご購入商品の返品や交換に関するご相談をサポートいたします。
-注文番号をお持ちの場合は、まず注文番号を入力してください。`;
-
 describe('c-agentforce-chat', () => {
     afterEach(() => {
         while (document.body.firstChild) {
@@ -158,8 +154,7 @@ describe('c-agentforce-chat', () => {
             element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
         ).map((node) => node.textContent);
 
-        expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
-        expect(agentMessages[agentMessages.length - 1]).toBe('Hello from Agentforce');
+        expect(agentMessages[0]).toBe('Hello from Agentforce');
     });
 
     it('shows error state when the Agentforce call fails', async () => {
@@ -206,8 +201,7 @@ describe('c-agentforce-chat', () => {
             element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
         ).map((node) => node.textContent);
 
-        expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
-        expect(agentMessages).toContain('Agentforce request failed');
+        expect(agentMessages[0]).toBe('Agentforce request failed');
     });
 
     it('initializes the session and renders notice messages from the start session response', async () => {
@@ -249,12 +243,11 @@ describe('c-agentforce-chat', () => {
             element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
         ).map((node) => node.textContent);
 
-        expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
         expect(agentMessages).toContain('返品・交換サポートへようこそ。');
         expect(agentMessages).toContain('注文番号を入力してください。');
     });
 
-    it('adds the default notice message when no initial messages are returned', async () => {
+    it('does not add a default notice message when no initial messages are returned', async () => {
         const element = createElement('c-agentforce-chat', {
             is: AgentforceChat
         });
@@ -281,8 +274,7 @@ describe('c-agentforce-chat', () => {
             element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
         ).map((node) => node.textContent);
 
-        expect(agentMessages).toHaveLength(1);
-        expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
+        expect(agentMessages).toHaveLength(0);
     });
 
     it('builds the messages endpoint from configured metadata when the session response omits URLs', async () => {
@@ -441,8 +433,7 @@ describe('c-agentforce-chat', () => {
             element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
         ).map((node) => node.textContent);
 
-        expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
-        expect(agentMessages[agentMessages.length - 1]).toBe('Acknowledged');
+        expect(agentMessages[0]).toBe('Acknowledged');
     });
 
     it('prefills the composer when prefillDraftMessage is invoked', async () => {
