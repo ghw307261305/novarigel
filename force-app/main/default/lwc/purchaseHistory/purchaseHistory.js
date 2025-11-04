@@ -31,9 +31,8 @@ export default class PurchaseHistory extends LightningElement {
   }
 
   get agentforceChatContainerClass() {
-    return `agentforce-chat-container${
-      this.isAgentforceChatVisible ? " agentforce-chat-container--visible" : ""
-    }`;
+    return `agentforce-chat-container${this.isAgentforceChatVisible ? " agentforce-chat-container--visible" : ""
+      }`;
   }
 
   get agentforceChatAriaHidden() {
@@ -147,7 +146,8 @@ export default class PurchaseHistory extends LightningElement {
   }
 
   async requestAgentforceSession(orderNumber) {
-    const payload = this.buildAgentforceSessionPayload(orderNumber);
+    // const payload = this.buildAgentforceSessionPayload(orderNumber);
+    const payload = null;
     const result = await startAgentforceSession({ payload });
     return this.normalizeAgentforceSessionResult(result);
   }
@@ -264,7 +264,7 @@ export default class PurchaseHistory extends LightningElement {
     }
 
     const value = String(orderNumber).trim();
-    return value;
+    return "注文番号は「" + value + "」です";
   }
 
   get chatLaunchDelay() {
