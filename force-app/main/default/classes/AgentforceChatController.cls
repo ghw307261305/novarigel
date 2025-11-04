@@ -1,3 +1,10 @@
+/**
+ * @description       : 
+ * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+ * @group             : 
+ * @last modified on  : 11-04-2025
+ * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+**/
 public with sharing class AgentforceChatController {
   @AuraEnabled(cacheable=true)
   public static AgentforceChatConfig getConfig() {
@@ -68,7 +75,7 @@ public with sharing class AgentforceChatController {
       throw new AuraHandledException('Missing Agentforce session');
     }
 
-    String tokenEndpoint = config.Endpoint_Url__c;
+    String tokenEndpoint = config.Endpoint_Url__c + '/services/oauth2/token';
     String consumerKey = config.Consumer_Key__c;
     String consumerSecret = config.Consumer_Secret__c;
     if (
@@ -238,7 +245,7 @@ public with sharing class AgentforceChatController {
       config != null ? config.Bot_Id__c : null
     );
 
-    String tokenEndpoint = config.Endpoint_Url__c;
+    String tokenEndpoint = config.Endpoint_Url__c + '/services/oauth2/token';
     String consumerKey = config.Consumer_Key__c;
     String consumerSecret = config.Consumer_Secret__c;
     if (
@@ -482,7 +489,7 @@ public with sharing class AgentforceChatController {
       payload.containsKey('instanceConfig') &&
       payload.get('instanceConfig') instanceof Map<String, Object>
     ) {
-      forceConfig.putAll(
+      instanceConfig.putAll(
         (Map<String, Object>) payload.get('instanceConfig')
       );
     }
@@ -494,13 +501,6 @@ public with sharing class AgentforceChatController {
         : null;
     if (String.isBlank(instanceEndpoint)) {
       instanceEndpoint = defaultInstanceEndpoint;
-    }
-    if (String.isBlank(instanceEndpoint)) {
-      try {
-        instanceEndpoint = URL.getSalesforceBaseUrl().toExternalForm();
-      } catch (Exception ex) {
-        // If the base URL cannot be resolved we leave the endpoint unset.
-      }
     }
     if (String.isNotBlank(instanceEndpoint)) {
       instanceConfig.put('endpoint', instanceEndpoint);
