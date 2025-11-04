@@ -113,6 +113,7 @@ public with sharing class AgentforceChatController {
     request.setEndpoint(messagesEndpoint);
     request.setHeader('Content-Type', 'application/json');
     request.setHeader('Authorization', 'Bearer ' + accessToken);
+    request.setTimeout(120000);
     if (String.isNotBlank(config.Authorization_Header_Value__c)) {
       request.setHeader(
         'X-Agentforce-Authorization',
