@@ -31,6 +31,7 @@ export default class AgentforceChat extends LightningElement {
 
     set startSessionEndpointUrl(value) {
         this._startSessionEndpointUrl = value;
+        this.resolveConfigReady();
     }
 
     @api
@@ -39,7 +40,8 @@ export default class AgentforceChat extends LightningElement {
     }
 
     set endpointUrl(value) {
-        this.startSessionEndpointUrl = value;
+        this._startSessionEndpointUrl = value;
+        this.resolveConfigReady();
     }
 
     @api
@@ -72,6 +74,8 @@ export default class AgentforceChat extends LightningElement {
     sessionInitializationPromise;
 
     wiredConfig;
+    _configReadyPromise;
+    _configReadyResolver;
 
     @wire(getConfig)
     wiredGetConfig(value) {
@@ -81,9 +85,9 @@ export default class AgentforceChat extends LightningElement {
             this.applyConfig(data);
         } else if (error) {
             this.errorMessage = 'Configuration error';
-            // eslint-disable-next-line no-console
             console.error('AgentforceChat configuration error', error);
         }
+        this.resolveConfigReady();
     }
 
     renderedCallback() {
@@ -266,7 +270,7 @@ export default class AgentforceChat extends LightningElement {
         let normalized;
         try {
             normalized = JSON.parse(JSON.stringify(result));
-        } catch (error) {
+        } catch {
             normalized = { ...result };
         }
 
@@ -316,8 +320,11 @@ export default class AgentforceChat extends LightningElement {
         }
 
         if (this.sessionInitializationPromise) {
-            return this.sessionInitializationPromise;
+            await this.sessionInitializationPromise;
+            return;
         }
+
+        await this.waitForConfig();
 
         const botId = this.resolvedBotId;
         if (!botId) {
@@ -356,6 +363,31 @@ export default class AgentforceChat extends LightningElement {
         this.ensureDefaultNoticeMessage();
     }
 
+    waitForConfig() {
+        if (
+            this.resolvedStartSessionEndpoint ||
+            (this.wiredConfig && (this.wiredConfig.data || this.wiredConfig.error))
+        ) {
+            return Promise.resolve();
+        }
+
+        if (!this._configReadyPromise) {
+            this._configReadyPromise = new Promise((resolve) => {
+                this._configReadyResolver = resolve;
+            });
+        }
+
+        return this._configReadyPromise;
+    }
+
+    resolveConfigReady() {
+        if (this._configReadyResolver) {
+            this._configReadyResolver();
+            this._configReadyResolver = undefined;
+            this._configReadyPromise = undefined;
+        }
+    }
+
     buildStartSessionEndpoint(template, botId) {
         if (!template) {
             return template;
@@ -382,10 +414,6 @@ export default class AgentforceChat extends LightningElement {
         const sessionKey = this.sessionKey || this.generateExternalSessionKey();
         const payload = {
             externalSessionKey: sessionKey,
-            instanceConfig: {
-                endpoint: this.resolvedInstanceEndpoint
-            },
-            tz: USER_TIMEZONE || this.getBrowserTimeZone(),
             variables: [
                 {
                     name: '$Context.EndUserLanguage',
@@ -408,6 +436,19 @@ export default class AgentforceChat extends LightningElement {
                 chunkTypes: ['Text']
             }
         };
+
+        const instanceEndpoint = this.resolvedInstanceEndpoint;
+        if (instanceEndpoint) {
+            payload.instanceConfig = {
+                endpoint: instanceEndpoint
+            };
+        }
+
+        const timezone = USER_TIMEZONE || this.getBrowserTimeZone();
+        if (timezone) {
+            payload.tz = timezone;
+        }
+
         return payload;
     }
 
@@ -520,7 +561,7 @@ export default class AgentforceChat extends LightningElement {
     getBrowserTimeZone() {
         try {
             return Intl.DateTimeFormat().resolvedOptions().timeZone;
-        } catch (error) {
+        } catch {
             return 'UTC';
         }
     }
@@ -667,7 +708,7 @@ export default class AgentforceChat extends LightningElement {
 
         try {
             return JSON.parse(value);
-        } catch (error) {
+        } catch {
             return undefined;
         }
     }
@@ -796,9 +837,9 @@ export default class AgentforceChat extends LightningElement {
         const statusId = this.statusMessageId;
         const replacement = this.createMessage('agent', content, variant);
 
-        this.messages = this.messages.map((message) =>
-            message.id === statusId ? { ...replacement, id: statusId } : message
-        );
+        this.messages = this.messages.map((message) => {
+            return message.id === statusId ? { ...replacement, id: statusId } : message;
+        });
 
         if (finalize) {
             this.statusMessageId = undefined;
@@ -812,9 +853,9 @@ export default class AgentforceChat extends LightningElement {
         }
 
         const statusId = this.statusMessageId;
-        this.messages = this.messages.map((existing) =>
-            existing.id === statusId ? { ...message, id: statusId } : existing
-        );
+        this.messages = this.messages.map((existing) => {
+            return existing.id === statusId ? { ...message, id: statusId } : existing;
+        });
         this.statusMessageId = undefined;
     }
 
