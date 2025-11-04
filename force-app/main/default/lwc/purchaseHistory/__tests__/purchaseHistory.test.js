@@ -16,20 +16,15 @@ jest.mock(
       focusComposerMock,
       applySessionResultMock,
       default: class AgentforceChatStub extends LightningElement {
-        initializeConversation(...args) {
-          return initializeConversationMock(...args);
-        }
-
-        prefillDraftMessage(...args) {
-          return prefillDraftMessageMock(...args);
-        }
-
-        focusComposer(...args) {
-          return focusComposerMock(...args);
-        }
-
-        applySessionResult(...args) {
-          return applySessionResultMock(...args);
+        constructor() {
+          super();
+          this.initializeConversation = (...args) =>
+            initializeConversationMock(...args);
+          this.prefillDraftMessage = (...args) =>
+            prefillDraftMessageMock(...args);
+          this.focusComposer = (...args) => focusComposerMock(...args);
+          this.applySessionResult = (...args) =>
+            applySessionResultMock(...args);
         }
       }
     };
