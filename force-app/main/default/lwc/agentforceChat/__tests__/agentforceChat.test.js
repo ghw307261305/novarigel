@@ -56,7 +56,14 @@ jest.mock(
 
 const getConfigAdapter = registerApexTestWireAdapter(mockGetConfig);
 
-const flushPromises = () => new Promise(setImmediate);
+const flushPromises = () =>
+    Promise.resolve().then(
+        () =>
+            new Promise((resolve) => {
+                // eslint-disable-next-line @lwc/lwc/no-async-operation
+                setTimeout(resolve, 0);
+            })
+    );
 
 const DEFAULT_START_SESSION_NOTICE = `こんにちは。NovaRigel返品エージェントです。
 ご購入商品の返品や交換に関するご相談をサポートいたします。
@@ -83,6 +90,8 @@ describe('c-agentforce-chat', () => {
             messagesEndpointUrl: 'https://default.example.com',
             botId: 'default-bot'
         });
+
+        await flushPromises();
 
         mockStartSession.mockResolvedValue({
             sessionId: 'session-123',
@@ -111,6 +120,18 @@ describe('c-agentforce-chat', () => {
         expect(mockStartSession).toHaveBeenCalledWith(
             expect.objectContaining({
                 endpointUrl: 'https://example.com/api'
+            })
+        );
+
+        const startSessionCall = mockStartSession.mock.calls[0][0];
+        expect(startSessionCall.payload).toEqual(
+            expect.objectContaining({
+                sessionConfig: expect.objectContaining({
+                    featureSupport: 'Streaming',
+                    streamingCapabilities: expect.objectContaining({
+                        chunkTypes: ['Text']
+                    })
+                })
             })
         );
 
@@ -147,6 +168,8 @@ describe('c-agentforce-chat', () => {
             messagesEndpointUrl: 'https://default.example.com',
             botId: 'default-bot'
         });
+
+        await flushPromises();
 
         mockStartSession.mockResolvedValue({
             sessionId: 'session-123',
@@ -192,6 +215,8 @@ describe('c-agentforce-chat', () => {
             messagesEndpointUrl: 'https://example.com/messages',
             botId: 'bot-notice'
         });
+
+        await flushPromises();
 
         mockStartSession.mockResolvedValueOnce({
             sessionId: 'session-notice',
@@ -253,47 +278,6 @@ describe('c-agentforce-chat', () => {
         expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
     });
 
-    it('initializes the session and renders notice messages from the start session response', async () => {
-        const element = createElement('c-agentforce-chat', {
-            is: AgentforceChat
-        });
-        element.botId = 'bot-notice';
-        document.body.appendChild(element);
-
-        getConfigAdapter.emit({
-            startSessionEndpointUrl: 'https://example.com/sessions',
-            messagesEndpointUrl: 'https://example.com/messages',
-            botId: 'bot-notice'
-        });
-
-        mockStartSession.mockResolvedValueOnce({
-            sessionId: 'session-notice',
-            messagesUrl: 'https://example.com/messages/session-notice',
-            data: {
-                session: {
-                    noticeMessages: [
-                        '返品・交換サポートへようこそ。',
-                        { message: '注文番号を入力してください。', type: 'notice' }
-                    ]
-                }
-            }
-        });
-
-        await flushPromises();
-
-        await element.initializeConversation();
-        await flushPromises();
-
-        expect(mockStartSession).toHaveBeenCalledTimes(1);
-
-        const agentMessages = Array.from(
-            element.shadowRoot.querySelectorAll('div[data-role="agent"] .message-body')
-        ).map((node) => node.textContent);
-
-        expect(agentMessages).toContain('返品・交換サポートへようこそ。');
-        expect(agentMessages).toContain('注文番号を入力してください。');
-    });
-
     it('builds the messages endpoint from configured metadata when the session response omits URLs', async () => {
         const element = createElement('c-agentforce-chat', {
             is: AgentforceChat
@@ -308,6 +292,8 @@ describe('c-agentforce-chat', () => {
                 'https://api.salesforce.com/einstein/ai-agent/v1/sessions/{0}/messages',
             botId: 'bot-123'
         });
+
+        await flushPromises();
 
         mockStartSession.mockResolvedValue({
             sessionId: 'session-789'
@@ -364,6 +350,8 @@ describe('c-agentforce-chat', () => {
             botId: 'ignored-bot'
         });
 
+        await flushPromises();
+
         mockStartSession.mockResolvedValue({
             sessionId: 'session-456'
         });
@@ -413,6 +401,8 @@ describe('c-agentforce-chat', () => {
             botId: 'default-bot'
         });
 
+        await flushPromises();
+
         mockStartSession.mockResolvedValue({
             sessionId: 'session-999',
             messagesUrl: 'https://example.com/api/sessions/session-999/messages'
@@ -446,20 +436,6 @@ describe('c-agentforce-chat', () => {
 
         expect(agentMessages[0]).toBe(DEFAULT_START_SESSION_NOTICE);
         expect(agentMessages[agentMessages.length - 1]).toBe('Acknowledged');
-    });
-
-    it('prefills the composer when prefillDraftMessage is invoked', async () => {
-        const element = createElement('c-agentforce-chat', {
-            is: AgentforceChat
-        });
-        document.body.appendChild(element);
-
-        element.prefillDraftMessage('00099999');
-
-        await flushPromises();
-
-        const textarea = element.shadowRoot.querySelector('lightning-textarea');
-        expect(textarea.value).toBe('00099999');
     });
 
     it('prefills the composer when prefillDraftMessage is invoked', async () => {
