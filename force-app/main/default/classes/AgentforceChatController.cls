@@ -270,7 +270,10 @@ public with sharing class AgentforceChatController {
     Map<String, Object> payloadToSend = payload != null
       ? new Map<String, Object>(payload)
       : new Map<String, Object>();
-    applyDefaultStartSessionPayload(payloadToSend);
+    applyDefaultStartSessionPayload(
+      payloadToSend,
+      config != null ? config.Endpoint_Url__c : null
+    );
 
     applyConfiguredPayloadOverrides(
       payloadToSend,
@@ -427,7 +430,8 @@ public with sharing class AgentforceChatController {
   }
 
   private static void applyDefaultStartSessionPayload(
-    Map<String, Object> payload
+    Map<String, Object> payload,
+    String defaultInstanceEndpoint
   ) {
     if (payload == null) {
       return;
@@ -451,37 +455,59 @@ public with sharing class AgentforceChatController {
       );
     }
 
-    Map<String, Object> instanceConfig = new Map<String, Object>();
+    Map<String, Object> forceConfig = new Map<String, Object>();
     if (
+      sessionConfig.containsKey('forceConfig') &&
+      sessionConfig.get('forceConfig') instanceof Map<String, Object>
+    ) {
+      forceConfig.putAll(
+        (Map<String, Object>) sessionConfig.get('forceConfig')
+      );
+    } else if (
       sessionConfig.containsKey('instanceConfig') &&
       sessionConfig.get('instanceConfig') instanceof Map<String, Object>
     ) {
-      instanceConfig.putAll(
+      forceConfig.putAll(
         (Map<String, Object>) sessionConfig.get('instanceConfig')
-      );
-    } else if (
-      payload.containsKey('instanceConfig') &&
-      payload.get('instanceConfig') instanceof Map<String, Object>
-    ) {
-      instanceConfig.putAll(
-        (Map<String, Object>) payload.get('instanceConfig')
       );
     }
     if (
-      !instanceConfig.containsKey('endpoint') ||
-      !(instanceConfig.get('endpoint') instanceof String) ||
-      String.isBlank((String) instanceConfig.get('endpoint'))
+      forceConfig.isEmpty() &&
+      payload.containsKey('forceConfig') &&
+      payload.get('forceConfig') instanceof Map<String, Object>
     ) {
+      forceConfig.putAll((Map<String, Object>) payload.get('forceConfig'));
+    }
+    if (
+      forceConfig.isEmpty() &&
+      payload.containsKey('instanceConfig') &&
+      payload.get('instanceConfig') instanceof Map<String, Object>
+    ) {
+      forceConfig.putAll(
+        (Map<String, Object>) payload.get('instanceConfig')
+      );
+    }
+
+    String forceEndpoint =
+      forceConfig.containsKey('endpoint') &&
+      forceConfig.get('endpoint') instanceof String
+        ? (String) forceConfig.get('endpoint')
+        : null;
+    if (String.isBlank(forceEndpoint)) {
+      forceEndpoint = defaultInstanceEndpoint;
+    }
+    if (String.isBlank(forceEndpoint)) {
       try {
-        instanceConfig.put(
-          'endpoint',
-          'https://orgfarm-ba397eacea-dev-ed.develop.my.salesforce.com'
-        );
+        forceEndpoint = URL.getSalesforceBaseUrl().toExternalForm();
       } catch (Exception ex) {
         // If the base URL cannot be resolved we leave the endpoint unset.
       }
     }
-    sessionConfig.put('instanceConfig', instanceConfig);
+    if (String.isNotBlank(forceEndpoint)) {
+      forceConfig.put('endpoint', forceEndpoint);
+    }
+    sessionConfig.put('forceConfig', forceConfig);
+    sessionConfig.remove('instanceConfig');
 
     Object tzValue = sessionConfig.containsKey('tz')
       ? sessionConfig.get('tz')
@@ -572,6 +598,7 @@ public with sharing class AgentforceChatController {
 
     payload.put('sessionConfig', sessionConfig);
     payload.remove('instanceConfig');
+    payload.remove('forceConfig');
     payload.remove('tz');
     payload.remove('variables');
     payload.remove('featureSupport');

@@ -416,7 +416,7 @@ export default class AgentforceChat extends LightningElement {
 
         const instanceEndpoint = this.resolvedInstanceEndpoint;
         if (instanceEndpoint) {
-            sessionConfig.instanceConfig = {
+            sessionConfig.forceConfig = {
                 endpoint: instanceEndpoint
             };
         }
