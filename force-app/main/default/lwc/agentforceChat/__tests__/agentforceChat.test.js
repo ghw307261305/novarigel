@@ -127,6 +127,9 @@ describe('c-agentforce-chat', () => {
         expect(startSessionCall.payload).toEqual(
             expect.objectContaining({
                 sessionConfig: expect.objectContaining({
+                    forceConfig: expect.objectContaining({
+                        endpoint: expect.any(String)
+                    }),
                     featureSupport: 'Streaming',
                     streamingCapabilities: expect.objectContaining({
                         chunkTypes: ['Text']
