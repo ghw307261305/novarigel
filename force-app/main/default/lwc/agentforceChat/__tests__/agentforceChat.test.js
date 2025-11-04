@@ -126,17 +126,21 @@ describe('c-agentforce-chat', () => {
         const startSessionCall = mockStartSession.mock.calls[0][0];
         expect(startSessionCall.payload).toEqual(
             expect.objectContaining({
-                sessionConfig: expect.objectContaining({
-                    forceConfig: expect.objectContaining({
-                        endpoint: expect.any(String)
-                    }),
-                    featureSupport: 'Streaming',
-                    streamingCapabilities: expect.objectContaining({
-                        chunkTypes: ['Text']
-                    })
-                })
+                instanceConfig: expect.objectContaining({
+                    endpoint: expect.any(String)
+                }),
+                featureSupport: 'Streaming',
+                streamingCapabilities: expect.objectContaining({
+                    chunkTypes: ['Text']
+                }),
+                variables: expect.arrayContaining([
+                    expect.objectContaining({ name: '$Context.EndUserLanguage' }),
+                    expect.objectContaining({ name: '$Context.EndUser.Id' }),
+                    expect.objectContaining({ name: '$Context.EndUser.Type' })
+                ])
             })
         );
+        expect(startSessionCall.payload.sessionConfig).toBeUndefined();
 
         expect(mockSendMessage).toHaveBeenCalledWith(
             expect.objectContaining({

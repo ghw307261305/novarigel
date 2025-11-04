@@ -455,31 +455,30 @@ public with sharing class AgentforceChatController {
       );
     }
 
-    Map<String, Object> forceConfig = new Map<String, Object>();
+    Map<String, Object> instanceConfig = new Map<String, Object>();
     if (
       sessionConfig.containsKey('forceConfig') &&
       sessionConfig.get('forceConfig') instanceof Map<String, Object>
     ) {
-      forceConfig.putAll(
+      instanceConfig.putAll(
         (Map<String, Object>) sessionConfig.get('forceConfig')
       );
-    } else if (
+    }
+    if (
       sessionConfig.containsKey('instanceConfig') &&
       sessionConfig.get('instanceConfig') instanceof Map<String, Object>
     ) {
-      forceConfig.putAll(
+      instanceConfig.putAll(
         (Map<String, Object>) sessionConfig.get('instanceConfig')
       );
     }
     if (
-      forceConfig.isEmpty() &&
       payload.containsKey('forceConfig') &&
       payload.get('forceConfig') instanceof Map<String, Object>
     ) {
-      forceConfig.putAll((Map<String, Object>) payload.get('forceConfig'));
+      instanceConfig.putAll((Map<String, Object>) payload.get('forceConfig'));
     }
     if (
-      forceConfig.isEmpty() &&
       payload.containsKey('instanceConfig') &&
       payload.get('instanceConfig') instanceof Map<String, Object>
     ) {
@@ -488,51 +487,57 @@ public with sharing class AgentforceChatController {
       );
     }
 
-    String forceEndpoint =
-      forceConfig.containsKey('endpoint') &&
-      forceConfig.get('endpoint') instanceof String
-        ? (String) forceConfig.get('endpoint')
+    String instanceEndpoint =
+      instanceConfig.containsKey('endpoint') &&
+      instanceConfig.get('endpoint') instanceof String
+        ? (String) instanceConfig.get('endpoint')
         : null;
-    if (String.isBlank(forceEndpoint)) {
-      forceEndpoint = defaultInstanceEndpoint;
+    if (String.isBlank(instanceEndpoint)) {
+      instanceEndpoint = defaultInstanceEndpoint;
     }
-    if (String.isBlank(forceEndpoint)) {
+    if (String.isBlank(instanceEndpoint)) {
       try {
-        forceEndpoint = URL.getSalesforceBaseUrl().toExternalForm();
+        instanceEndpoint = URL.getSalesforceBaseUrl().toExternalForm();
       } catch (Exception ex) {
         // If the base URL cannot be resolved we leave the endpoint unset.
       }
     }
-    if (String.isNotBlank(forceEndpoint)) {
-      forceConfig.put('endpoint', forceEndpoint);
+    if (String.isNotBlank(instanceEndpoint)) {
+      instanceConfig.put('endpoint', instanceEndpoint);
+      payload.put('instanceConfig', instanceConfig);
+    } else {
+      payload.remove('instanceConfig');
     }
-    sessionConfig.put('forceConfig', forceConfig);
-    sessionConfig.remove('instanceConfig');
 
-    Object tzValue = sessionConfig.containsKey('tz')
-      ? sessionConfig.get('tz')
-      : payload.get('tz');
+    Object tzValue = payload.containsKey('tz')
+      ? payload.get('tz')
+      : sessionConfig.get('tz');
     String tzString = tzValue instanceof String ? (String) tzValue : null;
     if (String.isBlank(tzString)) {
       try {
-        sessionConfig.put('tz', UserInfo.getTimeZone().getID());
+        tzString = UserInfo.getTimeZone().getID();
       } catch (Exception ex) {
         // Ignore and leave timezone unset when unavailable.
       }
     } else {
       sessionConfig.put('tz', tzString);
     }
+    if (String.isNotBlank(tzString)) {
+      payload.put('tz', tzString);
+    }
 
-    List<Object> variables = sessionConfig.containsKey('variables') &&
-      sessionConfig.get('variables') instanceof List<Object>
-      ? new List<Object>((List<Object>) sessionConfig.get('variables'))
+    List<Object> variables = payload.containsKey('variables') &&
+      payload.get('variables') instanceof List<Object>
+      ? new List<Object>((List<Object>) payload.get('variables'))
       : null;
     if (
       (variables == null || variables.isEmpty()) &&
-      payload.containsKey('variables') &&
-      payload.get('variables') instanceof List<Object>
+      sessionConfig.containsKey('variables') &&
+      sessionConfig.get('variables') instanceof List<Object>
     ) {
-      variables = new List<Object>((List<Object>) payload.get('variables'));
+      variables = new List<Object>(
+        (List<Object>) sessionConfig.get('variables')
+      );
     }
     if (variables == null || variables.isEmpty()) {
       variables = new List<Object>();
@@ -558,18 +563,18 @@ public with sharing class AgentforceChatController {
         }
       );
     }
-    sessionConfig.put('variables', variables);
+    payload.put('variables', variables);
 
-    Object featureSupport = sessionConfig.containsKey('featureSupport')
-      ? sessionConfig.get('featureSupport')
-      : payload.get('featureSupport');
+    Object featureSupport = payload.containsKey('featureSupport')
+      ? payload.get('featureSupport')
+      : sessionConfig.get('featureSupport');
     String featureSupportString = featureSupport instanceof String
       ? (String) featureSupport
       : null;
     if (String.isBlank(featureSupportString)) {
       featureSupportString = 'Streaming';
     }
-    sessionConfig.put('featureSupport', featureSupportString);
+    payload.put('featureSupport', featureSupportString);
 
     Map<String, Object> streamingCapabilities = new Map<String, Object>();
     if (
@@ -586,6 +591,13 @@ public with sharing class AgentforceChatController {
       streamingCapabilities.putAll(
         (Map<String, Object>) payload.get('streamingCapabilities')
       );
+    } else if (
+      sessionConfig.containsKey('streamingCapabilities') &&
+      sessionConfig.get('streamingCapabilities') instanceof Map<String, Object>
+    ) {
+      streamingCapabilities.putAll(
+        (Map<String, Object>) sessionConfig.get('streamingCapabilities')
+      );
     }
     Boolean hasChunkTypes =
       streamingCapabilities.containsKey('chunkTypes') &&
@@ -594,15 +606,28 @@ public with sharing class AgentforceChatController {
     if (!hasChunkTypes) {
       streamingCapabilities.put('chunkTypes', new List<Object>{ 'Text' });
     }
-    sessionConfig.put('streamingCapabilities', streamingCapabilities);
+    payload.put('streamingCapabilities', streamingCapabilities);
 
-    payload.put('sessionConfig', sessionConfig);
-    payload.remove('instanceConfig');
+    // Preserve any remaining legacy sessionConfig values by promoting them to the
+    // top-level payload to avoid silently dropping overrides.
+    for (String key : sessionConfig.keySet()) {
+      if (
+        key == 'forceConfig' ||
+        key == 'instanceConfig' ||
+        key == 'tz' ||
+        key == 'variables' ||
+        key == 'featureSupport' ||
+        key == 'streamingCapabilities'
+      ) {
+        continue;
+      }
+      if (!payload.containsKey(key)) {
+        payload.put(key, sessionConfig.get(key));
+      }
+    }
+
+    payload.remove('sessionConfig');
     payload.remove('forceConfig');
-    payload.remove('tz');
-    payload.remove('variables');
-    payload.remove('featureSupport');
-    payload.remove('streamingCapabilities');
   }
 
   private static void applyConfiguredPayloadOverrides(

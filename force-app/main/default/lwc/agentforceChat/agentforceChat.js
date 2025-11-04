@@ -412,35 +412,28 @@ export default class AgentforceChat extends LightningElement {
 
     buildStartSessionPayload() {
         const sessionKey = this.sessionKey || this.generateExternalSessionKey();
-        const sessionConfig = {};
-
-        const instanceEndpoint = this.resolvedInstanceEndpoint;
-        if (instanceEndpoint) {
-            sessionConfig.forceConfig = {
-                endpoint: instanceEndpoint
-            };
-        }
-
-        const timezone = USER_TIMEZONE || this.getBrowserTimeZone();
-        if (timezone) {
-            sessionConfig.tz = timezone;
-        }
-
-        sessionConfig.variables = [
-            {
-                name: '$Context.EndUserLanguage',
-                type: 'Text',
-                value: this.normalizeLocale(USER_LOCALE)
-            },
-            {
-                name: '$Context.EndUser.Id',
-                type: 'Text',
-                value: USER_ID
-            },
-            {
-                name: '$Context.EndUser.Type',
-                type: 'Text',
-                value: 'SalesforceUser'
+        const payload = {
+            externalSessionKey: sessionKey,
+            variables: [
+                {
+                    name: '$Context.EndUserLanguage',
+                    type: 'Text',
+                    value: this.normalizeLocale(USER_LOCALE)
+                },
+                {
+                    name: '$Context.EndUser.Id',
+                    type: 'Text',
+                    value: USER_ID
+                },
+                {
+                    name: '$Context.EndUser.Type',
+                    type: 'Text',
+                    value: 'SalesforceUser'
+                }
+            ],
+            featureSupport: 'Streaming',
+            streamingCapabilities: {
+                chunkTypes: ['Text']
             }
         ];
 
@@ -453,6 +446,20 @@ export default class AgentforceChat extends LightningElement {
             externalSessionKey: sessionKey,
             sessionConfig
         };
+
+        const instanceEndpoint = this.resolvedInstanceEndpoint;
+        if (instanceEndpoint) {
+            payload.instanceConfig = {
+                endpoint: instanceEndpoint
+            };
+        }
+
+        const timezone = USER_TIMEZONE || this.getBrowserTimeZone();
+        if (timezone) {
+            payload.tz = timezone;
+        }
+
+        return payload;
     }
 
     extractSessionId(result) {

@@ -74,10 +74,7 @@ private class AgentforceChatControllerTest {
       'AgentforceBuilder',
       ((Map<String, Object>) payload.get('context')).get('origin')
     );
-    System.assertEquals(
-      'Debug',
-      ((Map<String, Object>) payload.get('sessionConfig')).get('mode')
-    );
+    System.assertEquals('Debug', payload.get('mode'));
     System.assert(payload.containsKey('externalSessionKey'));
   }
 
