@@ -441,8 +441,25 @@ public with sharing class AgentforceChatController {
       payload.put('externalSessionKey', generateExternalSessionKey());
     }
 
+    Map<String, Object> sessionConfig = new Map<String, Object>();
+    if (
+      payload.containsKey('sessionConfig') &&
+      payload.get('sessionConfig') instanceof Map<String, Object>
+    ) {
+      sessionConfig.putAll(
+        (Map<String, Object>) payload.get('sessionConfig')
+      );
+    }
+
     Map<String, Object> instanceConfig = new Map<String, Object>();
     if (
+      sessionConfig.containsKey('instanceConfig') &&
+      sessionConfig.get('instanceConfig') instanceof Map<String, Object>
+    ) {
+      instanceConfig.putAll(
+        (Map<String, Object>) sessionConfig.get('instanceConfig')
+      );
+    } else if (
       payload.containsKey('instanceConfig') &&
       payload.get('instanceConfig') instanceof Map<String, Object>
     ) {
@@ -464,23 +481,35 @@ public with sharing class AgentforceChatController {
         // If the base URL cannot be resolved we leave the endpoint unset.
       }
     }
-    payload.put('instanceConfig', instanceConfig);
+    sessionConfig.put('instanceConfig', instanceConfig);
 
-    Object tzValue = payload.get('tz');
-    if (!(tzValue instanceof String) || String.isBlank((String) tzValue)) {
+    Object tzValue = sessionConfig.containsKey('tz')
+      ? sessionConfig.get('tz')
+      : payload.get('tz');
+    String tzString = tzValue instanceof String ? (String) tzValue : null;
+    if (String.isBlank(tzString)) {
       try {
-        payload.put('tz', UserInfo.getTimeZone().getID());
+        sessionConfig.put('tz', UserInfo.getTimeZone().getID());
       } catch (Exception ex) {
         // Ignore and leave timezone unset when unavailable.
       }
+    } else {
+      sessionConfig.put('tz', tzString);
     }
 
-    Boolean hasVariables =
+    List<Object> variables = sessionConfig.containsKey('variables') &&
+      sessionConfig.get('variables') instanceof List<Object>
+      ? new List<Object>((List<Object>) sessionConfig.get('variables'))
+      : null;
+    if (
+      (variables == null || variables.isEmpty()) &&
       payload.containsKey('variables') &&
-      payload.get('variables') instanceof List<Object> &&
-      !((List<Object>) payload.get('variables')).isEmpty();
-    if (!hasVariables) {
-      List<Object> variables = new List<Object>();
+      payload.get('variables') instanceof List<Object>
+    ) {
+      variables = new List<Object>((List<Object>) payload.get('variables'));
+    }
+    if (variables == null || variables.isEmpty()) {
+      variables = new List<Object>();
       variables.add(
         new Map<String, Object>{
           'name' => '$Context.EndUserLanguage',
@@ -502,19 +531,29 @@ public with sharing class AgentforceChatController {
           'value' => UserInfo.getUserType()
         }
       );
-      payload.put('variables', variables);
     }
+    sessionConfig.put('variables', variables);
 
-    Object featureSupport = payload.get('featureSupport');
-    if (
-      !(featureSupport instanceof String) ||
-      String.isBlank((String) featureSupport)
-    ) {
-      payload.put('featureSupport', 'Streaming');
+    Object featureSupport = sessionConfig.containsKey('featureSupport')
+      ? sessionConfig.get('featureSupport')
+      : payload.get('featureSupport');
+    String featureSupportString = featureSupport instanceof String
+      ? (String) featureSupport
+      : null;
+    if (String.isBlank(featureSupportString)) {
+      featureSupportString = 'Streaming';
     }
+    sessionConfig.put('featureSupport', featureSupportString);
 
     Map<String, Object> streamingCapabilities = new Map<String, Object>();
     if (
+      sessionConfig.containsKey('streamingCapabilities') &&
+      sessionConfig.get('streamingCapabilities') instanceof Map<String, Object>
+    ) {
+      streamingCapabilities.putAll(
+        (Map<String, Object>) sessionConfig.get('streamingCapabilities')
+      );
+    } else if (
       payload.containsKey('streamingCapabilities') &&
       payload.get('streamingCapabilities') instanceof Map<String, Object>
     ) {
@@ -529,7 +568,14 @@ public with sharing class AgentforceChatController {
     if (!hasChunkTypes) {
       streamingCapabilities.put('chunkTypes', new List<Object>{ 'Text' });
     }
-    payload.put('streamingCapabilities', streamingCapabilities);
+    sessionConfig.put('streamingCapabilities', streamingCapabilities);
+
+    payload.put('sessionConfig', sessionConfig);
+    payload.remove('instanceConfig');
+    payload.remove('tz');
+    payload.remove('variables');
+    payload.remove('featureSupport');
+    payload.remove('streamingCapabilities');
   }
 
   private static void applyConfiguredPayloadOverrides(
