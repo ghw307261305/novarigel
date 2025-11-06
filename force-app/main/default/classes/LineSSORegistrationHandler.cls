@@ -116,13 +116,11 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
 
   private static void validateUserData(Auth.UserData data) {
     if (data == null) {
-      throw new Auth.AuthException('Auth.UserData must not be null.');
+      throw new Exception('Auth.UserData must not be null.');
     }
 
     if (String.isBlank(getEmail(data))) {
-      throw new Auth.AuthException(
-        'Email address is required for registration.'
-      );
+      throw new Exception('Email address is required for registration.');
     }
   }
 
@@ -159,7 +157,7 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
       LIMIT 1
     ];
     if (accounts.isEmpty()) {
-      throw new Auth.AuthException(
+      throw new Exception(
         'Default account "' + DEFAULT_ACCOUNT_NAME + '" not found.'
       );
     }
@@ -390,8 +388,9 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
           WHERE Id = :portalId
           LIMIT 1
         ];
-        if (community.SelfRegistrationProfileId != null) {
-          profileId = community.SelfRegistrationProfileId;
+        Object portalProfile = community.get('SelfRegistrationProfileId');
+        if (portalProfile instanceof Id) {
+          profileId = (Id) portalProfile;
         }
       } catch (Exception ex) {
         // Ignore lookup failures and fall back to default logic.
@@ -473,10 +472,10 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
 
     String methodName = 'get' + propertyName;
     try {
-      TypeMethod method = data.getClass()
-        .getMethod(methodName, new List<Type>());
-      if (method != null) {
-        Object result = method.invoke(data, new List<Object>());
+      Type typeInfo = data.getClass();
+      Type.Method methodInfo = typeInfo.getMethod(methodName, new List<Type>());
+      if (methodInfo != null) {
+        Object result = methodInfo.invoke(data, new List<Object>());
         if (result instanceof String) {
           return (String) result;
         }

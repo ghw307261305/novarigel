@@ -124,7 +124,7 @@ private class LineSSORegistrationHandlerTest {
     Boolean thrown = false;
     try {
       handler.createUser(null, data);
-    } catch (Auth.AuthException ex) {
+    } catch (Exception ex) {
       thrown = true;
     }
     Test.stopTest();
