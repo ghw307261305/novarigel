@@ -294,10 +294,7 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
     String lastName,
     String fallback
   ) {
-    String nickname = getNickname(data);
-    if (String.isBlank(nickname)) {
-      nickname = fallback;
-    }
+    String nickname = fallback;
     if (String.isBlank(nickname)) {
       List<String> parts = new List<String>();
       if (String.isNotBlank(firstName)) {
@@ -359,8 +356,8 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
   }
 
   private static String resolveTimeZone(Auth.UserData data) {
-    String timeZone = getTimeZone(data);
-    return String.isNotBlank(timeZone) ? timeZone : DEFAULT_TIME_ZONE;
+    // String timeZone = getTimeZone(data);
+    return DEFAULT_TIME_ZONE;
   }
 
   private static String resolveLocaleSid(Auth.UserData data) {
@@ -380,36 +377,17 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
   }
 
   private static Id resolveProfileId(Id portalId) {
-    Id profileId;
-    if (portalId != null) {
-      try {
-        Network community = [
-          SELECT SelfRegistrationProfileId
-          FROM Network
-          WHERE Id = :portalId
-          LIMIT 1
-        ];
-        Object portalProfile = community.get('SelfRegistrationProfileId');
-        if (portalProfile instanceof Id) {
-          profileId = (Id) portalProfile;
-        }
-      } catch (Exception ex) {
-        // Ignore lookup failures and fall back to default logic.
-      }
-    }
-
-    if (profileId == null) {
-      try {
-        Profile profile = [
-          SELECT Id
-          FROM Profile
-          WHERE UserLicense.Name = 'Customer Community Plus'
-          LIMIT 1
-        ];
-        profileId = profile.Id;
-      } catch (Exception ex) {
-        profileId = UserInfo.getProfileId();
-      }
+    Id profileId = null;
+    try {
+      Profile profile = [
+        SELECT Id
+        FROM Profile
+        WHERE UserLicense.Name = '購入者'
+        LIMIT 1
+      ];
+      profileId = profile.Id;
+    } catch (Exception ex) {
+      profileId = UserInfo.getProfileId();
     }
 
     return profileId;
@@ -419,7 +397,7 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
     if (data == null) {
       return null;
     }
-    String value = data.getEmail();
+    String value = data.email;
     return !String.isBlank(value) ? value : getAttributeValue(data, 'Email');
   }
 
@@ -427,7 +405,7 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
     if (data == null) {
       return null;
     }
-    String value = data.getFirstName();
+    String value = data.firstName;
     return !String.isBlank(value) ? value : getAttributeValue(data, 'FirstName');
   }
 
@@ -435,7 +413,7 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
     if (data == null) {
       return null;
     }
-    String value = data.getLastName();
+    String value = data.lastName;
     return !String.isBlank(value) ? value : getAttributeValue(data, 'LastName');
   }
 
@@ -443,23 +421,15 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
     if (data == null) {
       return null;
     }
-    String value = data.getFullName();
+    String value = data.fullName;
     return !String.isBlank(value) ? value : getAttributeValue(data, 'FullName');
-  }
-
-  private static String getNickname(Auth.UserData data) {
-    if (data == null) {
-      return null;
-    }
-    String value = data.getNickname();
-    return !String.isBlank(value) ? value : getAttributeValue(data, 'Nickname');
   }
 
   private static String getUsername(Auth.UserData data) {
     if (data == null) {
       return null;
     }
-    String value = data.getUsername();
+    String value = data.username;
     return !String.isBlank(value) ? value : getAttributeValue(data, 'Username');
   }
 
@@ -467,16 +437,8 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
     if (data == null) {
       return null;
     }
-    String value = data.getIdentifier();
+    String value = data.identifier;
     return !String.isBlank(value) ? value : getAttributeValue(data, 'Identifier');
-  }
-
-  private static String getTimeZone(Auth.UserData data) {
-    if (data == null) {
-      return null;
-    }
-    String value = data.getTimeZone();
-    return !String.isBlank(value) ? value : getAttributeValue(data, 'TimeZone');
   }
 
   private static String getLocale(Auth.UserData data) {
@@ -500,7 +462,7 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
       return null;
     }
 
-    Map<String, String> attributes = data.getAttributeMap();
+    Map<String, String> attributes = data.attributeMap;
     if (attributes != null && attributes.containsKey(key)) {
       return attributes.get(key);
     }
