@@ -4,6 +4,7 @@
  * The handler provisions Community Plus users against the default account named '共通購入者'.
  */
 global with sharing class LineSSORegistrationHandler implements Auth.RegistrationHandler {
+  private class RegistrationException extends Exception {}
   private static final String DEFAULT_ACCOUNT_NAME = '共通購入者';
   private static final String DEFAULT_ALIAS = 'lineuser';
   private static final String DEFAULT_TIME_ZONE = 'Asia/Tokyo';
@@ -116,11 +117,11 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
 
   private static void validateUserData(Auth.UserData data) {
     if (data == null) {
-      throw new Exception('Auth.UserData must not be null.');
+      throw new RegistrationException('Auth.UserData must not be null.');
     }
 
     if (String.isBlank(getEmail(data))) {
-      throw new Exception('Email address is required for registration.');
+      throw new RegistrationException('Email address is required for registration.');
     }
   }
 
@@ -157,7 +158,7 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
       LIMIT 1
     ];
     if (accounts.isEmpty()) {
-      throw new Exception(
+      throw new RegistrationException(
         'Default account "' + DEFAULT_ACCOUNT_NAME + '" not found.'
       );
     }
@@ -415,73 +416,93 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
   }
 
   private static String getEmail(Auth.UserData data) {
-    return getStringValue(data, 'Email');
+    if (data == null) {
+      return null;
+    }
+    String value = data.getEmail();
+    return !String.isBlank(value) ? value : getAttributeValue(data, 'Email');
   }
 
   private static String getFirstName(Auth.UserData data) {
-    return getStringValue(data, 'FirstName');
+    if (data == null) {
+      return null;
+    }
+    String value = data.getFirstName();
+    return !String.isBlank(value) ? value : getAttributeValue(data, 'FirstName');
   }
 
   private static String getLastName(Auth.UserData data) {
-    return getStringValue(data, 'LastName');
+    if (data == null) {
+      return null;
+    }
+    String value = data.getLastName();
+    return !String.isBlank(value) ? value : getAttributeValue(data, 'LastName');
   }
 
   private static String getFullName(Auth.UserData data) {
-    return getStringValue(data, 'FullName');
+    if (data == null) {
+      return null;
+    }
+    String value = data.getFullName();
+    return !String.isBlank(value) ? value : getAttributeValue(data, 'FullName');
   }
 
   private static String getNickname(Auth.UserData data) {
-    return getStringValue(data, 'Nickname');
+    if (data == null) {
+      return null;
+    }
+    String value = data.getNickname();
+    return !String.isBlank(value) ? value : getAttributeValue(data, 'Nickname');
   }
 
   private static String getUsername(Auth.UserData data) {
-    return getStringValue(data, 'Username');
+    if (data == null) {
+      return null;
+    }
+    String value = data.getUsername();
+    return !String.isBlank(value) ? value : getAttributeValue(data, 'Username');
   }
 
   private static String getIdentifier(Auth.UserData data) {
-    return getStringValue(data, 'Identifier');
+    if (data == null) {
+      return null;
+    }
+    String value = data.getIdentifier();
+    return !String.isBlank(value) ? value : getAttributeValue(data, 'Identifier');
   }
 
   private static String getTimeZone(Auth.UserData data) {
-    return getStringValue(data, 'TimeZone');
+    if (data == null) {
+      return null;
+    }
+    String value = data.getTimeZone();
+    return !String.isBlank(value) ? value : getAttributeValue(data, 'TimeZone');
   }
 
   private static String getLocale(Auth.UserData data) {
-    String locale = getStringValue(data, 'Locale');
+    String locale = getAttributeValue(data, 'Locale');
     if (String.isBlank(locale)) {
-      locale = getStringValue(data, 'LocaleSidKey');
+      locale = getAttributeValue(data, 'LocaleSidKey');
     }
     return locale;
   }
 
   private static String getLanguage(Auth.UserData data) {
-    String language = getStringValue(data, 'Language');
+    String language = getAttributeValue(data, 'Language');
     if (String.isBlank(language)) {
-      language = getStringValue(data, 'LanguageLocaleKey');
+      language = getAttributeValue(data, 'LanguageLocaleKey');
     }
     return language;
   }
 
-  private static String getStringValue(
-    Auth.UserData data,
-    String propertyName
-  ) {
-    if (data == null) {
+  private static String getAttributeValue(Auth.UserData data, String key) {
+    if (data == null || String.isBlank(key)) {
       return null;
     }
 
-    String methodName = 'get' + propertyName;
-    try {
-      Type typeInfo = data.getClass();
-      Type.Method methodInfo = typeInfo.getMethod(methodName, new List<Type>());
-      if (methodInfo != null) {
-        Object result = methodInfo.invoke(data, new List<Object>());
-        if (result instanceof String) {
-          return (String) result;
-        }
-      }
-    } catch (Exception ex) {
-      // Ignore missing getters.
+    Map<String, String> attributes = data.getAttributeMap();
+    if (attributes != null && attributes.containsKey(key)) {
+      return attributes.get(key);
     }
     return null;
   }

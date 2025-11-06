@@ -138,9 +138,33 @@ private class LineSSORegistrationHandlerTest {
     if (values == null) {
       values = new Map<String, Object>();
     }
-    if (!values.containsKey('AttributeMap')) {
-      values.put('AttributeMap', new Map<String, String>());
+    Map<String, String> attributeMap;
+    if (values.containsKey('AttributeMap')) {
+      attributeMap = (Map<String, String>) values.get('AttributeMap');
+    } else {
+      attributeMap = new Map<String, String>();
     }
+    for (String key :
+      new List<String>{
+        'Email',
+        'FirstName',
+        'LastName',
+        'FullName',
+        'Nickname',
+        'Username',
+        'Identifier',
+        'TimeZone',
+        'Locale',
+        'LocaleSidKey',
+        'Language',
+        'LanguageLocaleKey'
+      }
+    ) {
+      if (values.containsKey(key) && values.get(key) instanceof String) {
+        attributeMap.put(key, (String) values.get(key));
+      }
+    }
+    values.put('AttributeMap', attributeMap);
     return (Auth.UserData) Test.createStub(
       Auth.UserData.class,
       new AuthUserDataStub(values)
