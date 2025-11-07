@@ -4,29 +4,45 @@ import PurchaseHistory from "c/purchaseHistory";
 jest.mock(
   "c/agentforceChat",
   () => {
-    const { LightningElement } = require("lwc");
+    const { LightningElement, registerDecorators } = require("lwc");
     const initializeConversationMock = jest.fn().mockResolvedValue();
     const prefillDraftMessageMock = jest.fn();
     const focusComposerMock = jest.fn();
     const applySessionResultMock = jest.fn().mockResolvedValue();
+    class AgentforceChatStub extends LightningElement {
+      initializeConversation(...args) {
+        return initializeConversationMock(...args);
+      }
+
+      prefillDraftMessage(...args) {
+        return prefillDraftMessageMock(...args);
+      }
+
+      focusComposer(...args) {
+        return focusComposerMock(...args);
+      }
+
+      applySessionResult(...args) {
+        return applySessionResultMock(...args);
+      }
+    }
+
+    registerDecorators(AgentforceChatStub, {
+      publicMethods: [
+        "initializeConversation",
+        "prefillDraftMessage",
+        "focusComposer",
+        "applySessionResult"
+      ]
+    });
+
     return {
       __esModule: true,
       initializeConversationMock,
       prefillDraftMessageMock,
       focusComposerMock,
       applySessionResultMock,
-      default: class AgentforceChatStub extends LightningElement {
-        constructor() {
-          super();
-          this.initializeConversation = (...args) =>
-            initializeConversationMock(...args);
-          this.prefillDraftMessage = (...args) =>
-            prefillDraftMessageMock(...args);
-          this.focusComposer = (...args) => focusComposerMock(...args);
-          this.applySessionResult = (...args) =>
-            applySessionResultMock(...args);
-        }
-      }
+      default: AgentforceChatStub
     };
   },
   { virtual: true }
@@ -68,7 +84,8 @@ jest.mock(
   { virtual: true }
 );
 
-const startSessionMock = require("@salesforce/apex/AgentforceChatController.startSession").default;
+const startSessionMock =
+  require("@salesforce/apex/AgentforceChatController.startSession").default;
 
 async function flushPromises(iterations = 1) {
   for (let index = 0; index < iterations; index += 1) {
@@ -139,7 +156,9 @@ describe("c-purchase-history", () => {
     expect(startSessionMock).toHaveBeenCalledWith(
       expect.objectContaining({
         payload: expect.objectContaining({
-          context: expect.objectContaining({ orderNumber: "00012345" })
+          context: expect.objectContaining({
+            orderNumber: "注文番号は「00012345」です"
+          })
         })
       })
     );
@@ -153,7 +172,9 @@ describe("c-purchase-history", () => {
     );
 
     expect(initializeConversationMock).toHaveBeenCalledTimes(1);
-    expect(prefillDraftMessageMock).toHaveBeenCalledWith("00012345");
+    expect(prefillDraftMessageMock).toHaveBeenCalledWith(
+      "注文番号は「00012345」です"
+    );
     expect(focusComposerMock).toHaveBeenCalled();
   });
 
