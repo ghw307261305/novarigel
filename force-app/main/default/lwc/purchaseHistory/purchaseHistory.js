@@ -139,7 +139,8 @@ export default class PurchaseHistory extends LightningElement {
   }
 
   async requestAgentforceSession(orderNumber) {
-    const payload = this.buildAgentforceSessionPayload(orderNumber);
+    // const payload = this.buildAgentforceSessionPayload(orderNumber);
+    const payload = null;
     const result = await startAgentforceSession({ payload });
     return this.normalizeAgentforceSessionResult(result);
   }
