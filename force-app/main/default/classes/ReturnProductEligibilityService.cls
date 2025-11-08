@@ -2,7 +2,7 @@
  * @description       : 
  * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
  * @group             : 
- * @last modified on  : 10-30-2025
+ * @last modified on  : 11-08-2025
  * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
 **/
 public with sharing class ReturnProductEligibilityService {
@@ -253,14 +253,14 @@ public with sharing class ReturnProductEligibilityService {
     }
 
     result.exchangeMessage = '申し訳ございません。現在交換用の在庫がございませんが、似たタイプの別商品をおすすめできます。';
-    result.alternativeProducts = findAlternativeProducts(product, basePrice);
-    if (!result.alternativeProducts.isEmpty()) {
-      result.alternativeMessage = buildAlternativesMessage(
-        result.alternativeProducts
-      );
-    } else {
-      result.alternativeMessage = null;
-    }
+    // result.alternativeProducts = findAlternativeProducts(product, basePrice);
+    // if (!result.alternativeProducts.isEmpty()) {
+    //   result.alternativeMessage = buildAlternativesMessage(
+    //     result.alternativeProducts
+    //   );
+    // } else {
+    //   result.alternativeMessage = null;
+    // }
   }
 
   private static List<ReturnEligibilityService.ProductSuggestion> findExchangeOptions(

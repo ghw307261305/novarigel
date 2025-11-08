@@ -2,7 +2,7 @@
  * @description       :
  * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
  * @group             :
- * @last modified on  : 10-01-2025
+ * @last modified on  : 11-08-2025
  * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
  **/
 public with sharing class PurchaseHistoryController {
@@ -83,7 +83,7 @@ public with sharing class PurchaseHistoryController {
         Product2.ProductCode,
         Product2.Description
       FROM OrderItem
-      WHERE Order.BillToContactId = :contactId
+      WHERE Order.BillToContactId = :contactId AND Order.Status = 'Activated'
       ORDER BY
         Order.EffectiveDate DESC,
         Order.OrderNumber DESC,
