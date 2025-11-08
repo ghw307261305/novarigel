@@ -4,7 +4,6 @@ import startAgentforceSession from "@salesforce/apex/AgentforceChatController.st
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 
 export default class PurchaseHistory extends LightningElement {
-  @api recordId = "001gK00000NYz8gQAD";
   orders = [];
   error;
   isLoading = false;
@@ -31,8 +30,9 @@ export default class PurchaseHistory extends LightningElement {
   }
 
   get agentforceChatContainerClass() {
-    return `agentforce-chat-container${this.isAgentforceChatVisible ? " agentforce-chat-container--visible" : ""
-      }`;
+    return `agentforce-chat-container${
+      this.isAgentforceChatVisible ? " agentforce-chat-container--visible" : ""
+    }`;
   }
 
   get agentforceChatAriaHidden() {
@@ -48,20 +48,13 @@ export default class PurchaseHistory extends LightningElement {
   }
 
   async loadPurchaseHistory() {
-    if (!this.recordId) {
-      this.error = {
-        message: "購入履歴を表示するには取引先のレコードIDが必要です。"
-      };
-      return;
-    }
-
     this.isLoading = true;
     this.error = undefined;
     this.orders = [];
 
     try {
-      const history = await getPurchaseHistory({ accountId: this.recordId });
-      this.orders = this.groupHistoryByOrder(history || []);
+      const history = await getPurchaseHistory();
+      this.orders = this.normalizeOrders(history || []);
     } catch (error) {
       this.error = error;
       this.dispatchEvent(
@@ -194,7 +187,7 @@ export default class PurchaseHistory extends LightningElement {
     if (typeof structuredClone === "function") {
       try {
         return structuredClone(value);
-      } catch (error) {
+      } catch {
         // Ignore structured clone errors and fall back to other strategies.
       }
     }
@@ -205,14 +198,14 @@ export default class PurchaseHistory extends LightningElement {
     ) {
       try {
         return window.structuredClone(value);
-      } catch (error) {
+      } catch {
         // Ignore structured clone errors and fall back to JSON parsing.
       }
     }
 
     try {
       return JSON.parse(JSON.stringify(value));
-    } catch (error) {
+    } catch {
       return value;
     }
   }
@@ -224,7 +217,7 @@ export default class PurchaseHistory extends LightningElement {
 
     try {
       return JSON.parse(value);
-    } catch (error) {
+    } catch {
       return undefined;
     }
   }
@@ -243,10 +236,7 @@ export default class PurchaseHistory extends LightningElement {
         return error.body.trim();
       }
 
-      if (
-        typeof error.body.message === "string" &&
-        error.body.message.trim()
-      ) {
+      if (typeof error.body.message === "string" && error.body.message.trim()) {
         return error.body.message.trim();
       }
     }
@@ -297,11 +287,20 @@ export default class PurchaseHistory extends LightningElement {
     }
 
     try {
-      if (
-        this.agentforceSessionResult &&
+      let applySessionResultFn =
         typeof chat.applySessionResult === "function"
-      ) {
-        await chat.applySessionResult(this.agentforceSessionResult);
+          ? chat.applySessionResult.bind(chat)
+          : null;
+
+      if (!applySessionResultFn) {
+        await Promise.resolve();
+        if (typeof chat.applySessionResult === "function") {
+          applySessionResultFn = chat.applySessionResult.bind(chat);
+        }
+      }
+
+      if (this.agentforceSessionResult && applySessionResultFn) {
+        await applySessionResultFn(this.agentforceSessionResult);
       }
 
       if (typeof chat.initializeConversation === "function") {
@@ -335,70 +334,65 @@ export default class PurchaseHistory extends LightningElement {
     this.agentforceSessionResult = undefined;
   }
 
-  groupHistoryByOrder(historyItems) {
-    if (!Array.isArray(historyItems) || historyItems.length === 0) {
+  normalizeOrders(orders) {
+    if (!Array.isArray(orders) || orders.length === 0) {
       return [];
     }
 
-    const ordersById = new Map();
+    return orders
+      .filter((order) => order && order.orderId)
+      .map((order) => {
+        const currencyIsoCode = order.currencyIsoCode || "JPY";
+        const items = Array.isArray(order.items) ? order.items : [];
+        let itemCount = 0;
+        let computedTotalPrice = 0;
 
-    historyItems.forEach((item) => {
-      const orderId = item.orderId;
-      if (!orderId) {
-        return;
-      }
+        const normalizedItems = items.map((item) => {
+          const hasQuantity =
+            item?.quantity !== null && item?.quantity !== undefined;
+          const quantity = hasQuantity
+            ? this.getNumericValue(item.quantity)
+            : null;
+          const unitPrice = this.getNumericValue(item.unitPrice);
+          const lineTotalPrice = this.getNumericValue(item.totalPrice);
+          const quantityForCount = hasQuantity && quantity > 0 ? quantity : 1;
+          itemCount += quantityForCount;
+          computedTotalPrice += lineTotalPrice;
 
-      if (!ordersById.has(orderId)) {
-        ordersById.set(orderId, {
-          orderId,
-          orderNumber: item.orderNumber,
-          purchaseDate: item.purchaseDate,
-          status: item.status,
-          currencyIsoCode: item.currencyIsoCode || "JPY",
-          totalPrice: 0,
-          items: [],
-          itemCount: 0
+          return {
+            orderItemId: item.orderItemId,
+            productName: item.productName || "商品名未設定",
+            productCode: item.productCode,
+            productDescription: this.formatDescription(item.productDescription),
+            quantityFormatted: hasQuantity ? this.formatNumber(quantity) : "",
+            unitPriceFormatted: this.formatCurrency(unitPrice, currencyIsoCode),
+            totalPriceFormatted: this.formatCurrency(
+              lineTotalPrice,
+              currencyIsoCode
+            ),
+            initial: this.getInitial(item.productName)
+          };
         });
-      }
 
-      const order = ordersById.get(orderId);
-      const hasQuantity = item.quantity !== null && item.quantity !== undefined;
-      const quantity = hasQuantity ? this.getNumericValue(item.quantity) : null;
-      const unitPrice = this.getNumericValue(item.unitPrice);
-      const totalPrice = this.getNumericValue(item.totalPrice);
+        const providedTotalPrice = this.getNumericValue(order.totalPrice);
+        const totalPrice =
+          providedTotalPrice > 0 ? providedTotalPrice : computedTotalPrice;
 
-      order.items.push({
-        orderItemId: item.orderItemId,
-        productName: item.productName || "商品名未設定",
-        productCode: item.productCode,
-        productDescription: this.formatDescription(item.productDescription),
-        quantityFormatted: hasQuantity ? this.formatNumber(quantity) : "",
-        unitPriceFormatted: this.formatCurrency(
-          unitPrice,
-          order.currencyIsoCode
-        ),
-        totalPriceFormatted: this.formatCurrency(
+        return {
+          orderId: order.orderId,
+          orderNumber: order.orderNumber,
+          purchaseDate: order.purchaseDate,
+          status: order.status,
+          currencyIsoCode,
           totalPrice,
-          order.currencyIsoCode
-        ),
-        initial: this.getInitial(item.productName)
+          items: normalizedItems,
+          itemCount,
+          purchaseDateFormatted: this.formatDate(order.purchaseDate),
+          totalPriceFormatted: this.formatCurrency(totalPrice, currencyIsoCode),
+          statusText: order.status || "不明",
+          itemCountText: this.formatItemCount(itemCount)
+        };
       });
-
-      order.totalPrice += totalPrice;
-      const quantityForCount = hasQuantity && quantity > 0 ? quantity : 1;
-      order.itemCount += quantityForCount;
-    });
-
-    return Array.from(ordersById.values()).map((order) => ({
-      ...order,
-      purchaseDateFormatted: this.formatDate(order.purchaseDate),
-      totalPriceFormatted: this.formatCurrency(
-        order.totalPrice,
-        order.currencyIsoCode
-      ),
-      statusText: order.status || "不明",
-      itemCountText: this.formatItemCount(order.itemCount)
-    }));
   }
 
   formatDate(value) {
