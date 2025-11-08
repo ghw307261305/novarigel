@@ -382,7 +382,7 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
       Profile profile = [
         SELECT Id
         FROM Profile
-        WHERE UserLicense.Name = '購入者'
+        WHERE Name = '購入者'
         LIMIT 1
       ];
       profileId = profile.Id;
@@ -398,7 +398,10 @@ global with sharing class LineSSORegistrationHandler implements Auth.Registratio
       return null;
     }
     String value = data.email;
-    return !String.isBlank(value) ? value : getAttributeValue(data, 'Email');
+    if(String.isBlank(value)){
+       value = data.identifier + '@line.local';
+    }
+    return value;
   }
 
   private static String getFirstName(Auth.UserData data) {
