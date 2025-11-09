@@ -361,108 +361,108 @@ public with sharing class ReturnProductEligibilityService {
     return suggestions;
   }
 
-  // private static List<ReturnEligibilityService.ProductSuggestion> findAlternativeProducts(
-  //   Product2 product,
-  //   Decimal basePrice
-  // ) {
-  //   if (product == null) {
-  //     return new List<ReturnEligibilityService.ProductSuggestion>();
-  //   }
+  private static List<ReturnEligibilityService.ProductSuggestion> findAlternativeProducts(
+    Product2 product,
+    Decimal basePrice
+  ) {
+    if (product == null) {
+      return new List<ReturnEligibilityService.ProductSuggestion>();
+    }
 
-  //   Id standardPricebookId = getStandardPricebookIdSafe();
-  //   Decimal comparisonPrice = basePrice != null
-  //     ? basePrice
-  //     : getProductUnitPrice(product);
+    Id standardPricebookId = getStandardPricebookIdSafe();
+    Decimal comparisonPrice = basePrice != null
+      ? basePrice
+      : getProductUnitPrice(product);
 
-  //   String family = product.Family;
-  //   List<ReturnEligibilityService.ProductSuggestion> alternatives = new List<ReturnEligibilityService.ProductSuggestion>();
-  //   if (String.isBlank(family)) {
-  //     return alternatives;
-  //   }
+    String family = product.Family;
+    List<ReturnEligibilityService.ProductSuggestion> alternatives = new List<ReturnEligibilityService.ProductSuggestion>();
+    if (String.isBlank(family)) {
+      return alternatives;
+    }
 
-  //   if (comparisonPrice != null && standardPricebookId != null) {
-  //     Decimal tolerance = comparisonPrice * 0.2;
-  //     Decimal minPrice = comparisonPrice - tolerance;
-  //     Decimal maxPrice = comparisonPrice + tolerance;
-  //     List<PricebookEntry> entries = [
-  //       SELECT
-  //         Id,
-  //         Product2.Id,
-  //         Product2.Name,
-  //         Product2.ProductCode,
-  //         Product2.Family,
-  //         Product2.Description,
-  //         UnitPrice
-  //       FROM PricebookEntry
-  //       WHERE
-  //         Pricebook2Id = :standardPricebookId
-  //         AND Product2.IsActive = TRUE
-  //         AND Product2Id != :product.Id
-  //         AND Product2.Family = :family
-  //         AND UnitPrice >= :minPrice
-  //         AND UnitPrice <= :maxPrice
-  //       ORDER BY UnitPrice ASC
-  //       LIMIT 5
-  //     ];
-  //     for (PricebookEntry entry : entries) {
-  //       ReturnEligibilityService.ProductSuggestion suggestion = new ReturnEligibilityService.ProductSuggestion();
-  //       suggestion.productId = entry.Product2Id;
-  //       suggestion.name = entry.Product2.Name;
-  //       suggestion.productCode = entry.Product2.ProductCode;
-  //       suggestion.family = entry.Product2.Family;
-  //       suggestion.description = entry.Product2.Description;
-  //       suggestion.unitPrice = entry.UnitPrice;
-  //       alternatives.add(suggestion);
-  //     }
-  //   }
+    if (comparisonPrice != null && standardPricebookId != null) {
+      Decimal tolerance = comparisonPrice * 0.2;
+      Decimal minPrice = comparisonPrice - tolerance;
+      Decimal maxPrice = comparisonPrice + tolerance;
+      List<PricebookEntry> entries = [
+        SELECT
+          Id,
+          Product2.Id,
+          Product2.Name,
+          Product2.ProductCode,
+          Product2.Family,
+          Product2.Description,
+          UnitPrice
+        FROM PricebookEntry
+        WHERE
+          Pricebook2Id = :standardPricebookId
+          AND Product2.IsActive = TRUE
+          AND Product2Id != :product.Id
+          AND Product2.Family = :family
+          AND UnitPrice >= :minPrice
+          AND UnitPrice <= :maxPrice
+        ORDER BY UnitPrice ASC
+        LIMIT 5
+      ];
+      for (PricebookEntry entry : entries) {
+        ReturnEligibilityService.ProductSuggestion suggestion = new ReturnEligibilityService.ProductSuggestion();
+        suggestion.productId = entry.Product2Id;
+        suggestion.name = entry.Product2.Name;
+        suggestion.productCode = entry.Product2.ProductCode;
+        suggestion.family = entry.Product2.Family;
+        suggestion.description = entry.Product2.Description;
+        suggestion.unitPrice = entry.UnitPrice;
+        alternatives.add(suggestion);
+      }
+    }
 
-  //   if (alternatives.isEmpty()) {
-  //     List<Product2> familyProducts = [
-  //       SELECT Id, Name, ProductCode, Family, Description
-  //       FROM Product2
-  //       WHERE IsActive = TRUE AND Family = :family AND Id != :product.Id
-  //       ORDER BY CreatedDate DESC
-  //       LIMIT 5
-  //     ];
-  //     for (Product2 familyProduct : familyProducts) {
-  //       ReturnEligibilityService.ProductSuggestion suggestion = new ReturnEligibilityService.ProductSuggestion();
-  //       suggestion.productId = familyProduct.Id;
-  //       suggestion.name = familyProduct.Name;
-  //       suggestion.productCode = familyProduct.ProductCode;
-  //       suggestion.family = familyProduct.Family;
-  //       suggestion.description = familyProduct.Description;
-  //       suggestion.unitPrice = getProductUnitPrice(familyProduct);
-  //       alternatives.add(suggestion);
-  //     }
-  //   }
+    if (alternatives.isEmpty()) {
+      List<Product2> familyProducts = [
+        SELECT Id, Name, ProductCode, Family, Description
+        FROM Product2
+        WHERE IsActive = TRUE AND Family = :family AND Id != :product.Id
+        ORDER BY CreatedDate DESC
+        LIMIT 5
+      ];
+      for (Product2 familyProduct : familyProducts) {
+        ReturnEligibilityService.ProductSuggestion suggestion = new ReturnEligibilityService.ProductSuggestion();
+        suggestion.productId = familyProduct.Id;
+        suggestion.name = familyProduct.Name;
+        suggestion.productCode = familyProduct.ProductCode;
+        suggestion.family = familyProduct.Family;
+        suggestion.description = familyProduct.Description;
+        suggestion.unitPrice = getProductUnitPrice(familyProduct);
+        alternatives.add(suggestion);
+      }
+    }
 
-  //   return alternatives;
-  // }
+    return alternatives;
+  }
 
-  // private static String buildAlternativesMessage(
-  //   List<ReturnEligibilityService.ProductSuggestion> suggestions
-  // ) {
-  //   if (suggestions == null || suggestions.isEmpty()) {
-  //     return null;
-  //   }
-  //   List<String> parts = new List<String>();
-  //   for (ReturnEligibilityService.ProductSuggestion suggestion : suggestions) {
-  //     List<String> fragments = new List<String>();
-  //     if (!String.isBlank(suggestion.name)) {
-  //       fragments.add(suggestion.name);
-  //     }
-  //     if (!String.isBlank(suggestion.productCode)) {
-  //       fragments.add('商品コード: ' + suggestion.productCode);
-  //     }
-  //     if (suggestion.unitPrice != null) {
-  //       fragments.add(
-  //         '価格: ¥' + String.valueOf(Math.round(suggestion.unitPrice))
-  //       );
-  //     }
-  //     parts.add(String.join(fragments, ' / '));
-  //   }
-  //   return '代替候補: ' + String.join(parts, '、 ');
-  // }
+  private static String buildAlternativesMessage(
+    List<ReturnEligibilityService.ProductSuggestion> suggestions
+  ) {
+    if (suggestions == null || suggestions.isEmpty()) {
+      return null;
+    }
+    List<String> parts = new List<String>();
+    for (ReturnEligibilityService.ProductSuggestion suggestion : suggestions) {
+      List<String> fragments = new List<String>();
+      if (!String.isBlank(suggestion.name)) {
+        fragments.add(suggestion.name);
+      }
+      if (!String.isBlank(suggestion.productCode)) {
+        fragments.add('商品コード: ' + suggestion.productCode);
+      }
+      if (suggestion.unitPrice != null) {
+        fragments.add(
+          '価格: ¥' + String.valueOf(Math.round(suggestion.unitPrice))
+        );
+      }
+      parts.add(String.join(fragments, ' / '));
+    }
+    return '代替候補: ' + String.join(parts, '、 ');
+  }
 
   public static Decimal getProductUnitPrice(Product2 product) {
     Id standardPricebookId = getStandardPricebookIdSafe();
