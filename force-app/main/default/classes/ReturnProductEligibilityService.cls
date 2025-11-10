@@ -253,14 +253,14 @@ public with sharing class ReturnProductEligibilityService {
     }
 
     result.exchangeMessage = '申し訳ございません。現在交換用の在庫がございませんが、似たタイプの別商品をおすすめできます。';
-    // result.alternativeProducts = findAlternativeProducts(product, basePrice);
-    // if (!result.alternativeProducts.isEmpty()) {
-    //   result.alternativeMessage = buildAlternativesMessage(
-    //     result.alternativeProducts
-    //   );
-    // } else {
-    //   result.alternativeMessage = null;
-    // }
+    result.alternativeProducts = findAlternativeProducts(product, basePrice);
+    if (!result.alternativeProducts.isEmpty()) {
+      result.alternativeMessage = buildAlternativesMessage(
+        result.alternativeProducts
+      );
+    } else {
+      result.alternativeMessage = null;
+    }
   }
 
   private static List<ReturnEligibilityService.ProductSuggestion> findExchangeOptions(
