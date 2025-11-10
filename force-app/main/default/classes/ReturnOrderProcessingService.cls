@@ -487,6 +487,7 @@ public with sharing class ReturnOrderProcessingService {
     setDecimalField(record, fields, 'Quantity', quantity);
     setDecimalField(record, fields, 'UnitPrice', orderItem.UnitPrice);
     setTextField(record, fields, 'ReturnReason', returnReason);
+    setTextField(record, fields, 'ReturnStatus__c', '受付待ち');
 
     populateRequiredDefaults(record, describe);
     return record;
