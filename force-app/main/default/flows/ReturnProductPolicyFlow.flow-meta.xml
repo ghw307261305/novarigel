@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>ReturnProductPolicy</name>
+        <label>返品ポリシー判定</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>ReturnEligibilityService</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>ReturnProductPolicyPrompt</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>productIdentifier</name>
+            <value>
+                <elementReference>var_productIdentifier</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>returnReason</name>
+            <value>
+                <elementReference>var_returnReason</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>ReturnEligibilityService</nameSegment>
+        <offset>0</offset>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <apiVersion>65.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <assignments>
+        <name>ReturnProductPolicyPrompt</name>
+        <elementSubtype>AddPromptInstructions</elementSubtype>
+        <label>返品ポリシー判定プロンプト</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>$Output.Prompt</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <stringValue>以下の情報を基に、顧客へ「前向きで自然な会話文」として返品可否の結果を案内してください。  
+各項目は値が存在する場合のみ使用し、存在しない情報は省略してください。  
+全体として、顧客が安心して対応できるように、丁寧で温かみのある表現にまとめてください。
+
+---
+
+{#if ReturnProductPolicy.productFound}
+商品を確認しました。「{!ReturnProductPolicy.productFound}」が返品対象として登録されています。  
+{/if}
+
+{#if ReturnProductPolicy.policyName}
+この商品には「{!ReturnProductPolicy.policyName}」が適用されています。  
+{/if}
+
+{#if ReturnProductPolicy.policyDescription}
+ポリシーの概要：{!ReturnProductPolicy.policyDescription}  
+{/if}
+
+{#if ReturnProductPolicy.reasonCategory}
+お客様の返品理由は「{!ReturnProductPolicy.reasonCategory}」として分類されました。  
+{/if}
+
+{#if ReturnProductPolicy.isReturnable}
+確認の結果、返品条件を満たしているため、返品・交換の対応が可能です。  
+{/if}
+
+{#if ReturnProductPolicy.reasonAccepted}
+理由の妥当性も確認できました。  
+{/if}
+
+{#if ReturnProductPolicy.primaryMessage}
+{!ReturnProductPolicy.primaryMessage}  
+{/if}
+
+{#if ReturnProductPolicy.exchangeMessage}
+また、{!ReturnProductPolicy.exchangeMessage}  
+{/if}
+
+{#if ReturnProductPolicy.alternativeMessage}
+もしご希望があれば、{!ReturnProductPolicy.alternativeMessage}  
+{/if}
+
+{#if ReturnProductPolicy.secondaryMessage}
+{!ReturnProductPolicy.secondaryMessage}  
+{/if}
+
+{#if ReturnProductPolicy.status}
+（現在の処理状況：{!ReturnProductPolicy.status}）  
+{/if}
+
+---
+
+出力例：  
+「商品を確認いたしました。お客様の返品理由は返品条件を満たしております。返品手続きを進めてもよろしいでしょうか？」
+
+</stringValue>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <environments>Default</environments>
+    <interviewLabel>返品ポリシー判定フロー {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>返品ポリシー判定フロー</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>PromptFlow</processType>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>ReturnProductPolicy</targetReference>
+        </connector>
+        <triggerType>Capability</triggerType>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>var_productIdentifier</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>var_returnReason</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>

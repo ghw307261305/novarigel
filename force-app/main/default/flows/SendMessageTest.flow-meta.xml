@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>ReturnOrderProcess</name>
+        <label>返品注文処理</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>ReturnOrderProcessingService</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>JudgeProcessReuslt</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>orderNumber</name>
+            <value>
+                <elementReference>var_orderNumber</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>productIdentifier</name>
+            <value>
+                <elementReference>var_productIdentifier</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>quantity</name>
+            <value>
+                <elementReference>var_quantity</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>returnReason</name>
+            <value>
+                <elementReference>var_returnReason</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>ReturnOrderProcessingService</nameSegment>
+        <offset>0</offset>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <actionCalls>
+        <name>Slack_1</name>
+        <label>Slack 返品完了通知を送信 アクション 1</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>SlackMessageAction</actionName>
+        <actionType>apex</actionType>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>customerName</name>
+            <value>
+                <stringValue>仮り顧客</stringValue>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>processorName</name>
+            <value>
+                <elementReference>$User.Username</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>productName</name>
+            <value>
+                <elementReference>var_productIdentifier</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>recipientIdOrEmail</name>
+            <value>
+                <stringValue>D09M82E4JV6</stringValue>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>registrationDateTime</name>
+            <value>
+                <stringValue>{!$Flow.CurrentDateTime} </stringValue>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>returnOrderNumber</name>
+            <value>
+                <elementReference>var_orderNumber</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>returnReason</name>
+            <value>
+                <elementReference>var_returnReason</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>SlackMessageAction</nameSegment>
+        <offset>0</offset>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <apiVersion>65.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <assignments>
+        <name>ReturnOrderProcessPrompt_NG</name>
+        <elementSubtype>AddPromptInstructions</elementSubtype>
+        <label>返品処理プロンプト（失敗）</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>$Output.Prompt</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <stringValue>以下の情報を基に、顧客へ返品手続きの結果を自然な日本語で案内してください。  
+各項目は値が存在する場合のみ使用し、存在しない情報は省略してください。  
+全体として丁寧で落ち着いた口調にし、顧客が安心できる表現にまとめてください。
+
+---
+
+{#if ReturnOrderProcess.status}
+処理状況：{!ReturnOrderProcess.status}
+{/if}
+
+{#if ReturnOrderProcess.primaryMessage}
+ご案内：{!ReturnOrderProcess.primaryMessage}
+{/if}
+
+{#if ReturnOrderProcess.secondaryMessage}
+補足説明：{!ReturnOrderProcess.secondaryMessage}
+{/if}
+
+---
+</stringValue>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <assignments>
+        <name>ReturnOrderProcessPrompt_OK</name>
+        <elementSubtype>AddPromptInstructions</elementSubtype>
+        <label>返品処理プロンプト（成功）</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>$Output.Prompt</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <stringValue>以下の情報を基に、顧客へ返品手続きの結果を自然な日本語で案内してください。  
+各項目は値が存在する場合のみ使用し、存在しない情報は省略してください。  
+全体として丁寧で落ち着いた口調にし、顧客が安心できる表現にまとめてください。
+
+---
+
+{#if ReturnOrderProcess.status}
+処理状況：{!ReturnOrderProcess.status}
+{/if}
+
+{#if ReturnOrderProcess.primaryMessage}
+ご案内：{!ReturnOrderProcess.primaryMessage}
+{/if}
+
+{#if ReturnOrderProcess.secondaryMessage}
+補足説明：{!ReturnOrderProcess.secondaryMessage}
+{/if}
+
+{#if ReturnOrderProcess.returnOrderNumber}
+返品注文番号：{!ReturnOrderProcess.returnOrderNumber}
+{/if}
+
+---
+
+出力例：  
+「返品手続きが完了いたしました。返品注文番号は XXXXXXXX です。  
+この番号をお控えのうえ、担当者からの確認メールをお待ちください。」  
+
+</stringValue>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Slack_1</targetReference>
+        </connector>
+    </assignments>
+    <decisions>
+        <name>JudgeProcessReuslt</name>
+        <label>処理結果判定</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>ReturnOrderProcessPrompt_NG</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>デフォルトの結果</defaultConnectorLabel>
+        <rules>
+            <name>IsOK</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>ReturnOrderProcess.success</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>ReturnOrderProcessPrompt_OK</targetReference>
+            </connector>
+            <label>成功した場合</label>
+        </rules>
+    </decisions>
+    <environments>Default</environments>
+    <interviewLabel>返品手続き送信Test {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>返品手続き送信Test</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>PromptFlow</processType>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>ReturnOrderProcess</targetReference>
+        </connector>
+        <triggerType>Capability</triggerType>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>var_orderNumber</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>var_productIdentifier</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>var_quantity</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>0</scale>
+        <value>
+            <numberValue>1.0</numberValue>
+        </value>
+    </variables>
+    <variables>
+        <name>var_returnReason</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>

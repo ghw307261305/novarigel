@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>ReturnProductEvaluate</name>
+        <label>返品対象商品の判定</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>ReturnProductEligibilityService</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>ReturnProductEvaluatePrompt</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>productIdentifier</name>
+            <value>
+                <elementReference>var_productIdentifier</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>ReturnProductEligibilityService</nameSegment>
+        <offset>0</offset>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <apiVersion>65.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <assignments>
+        <name>ReturnProductEvaluatePrompt</name>
+        <elementSubtype>AddPromptInstructions</elementSubtype>
+        <label>返品対象商品判定プロンプト</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>$Output.Prompt</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <stringValue>以下の情報を基に、顧客へ返品可否の結果を案内してください。  
+各項目は値が存在する場合のみ出力し、存在しない場合は省略してください。  
+自然な日本語の会話文としてまとめて出力してください。
+
+---
+
+{#if ReturnProductEvaluate.productFound}
+商品確認結果：{!ReturnProductEvaluate.productFound}
+{/if}
+
+{#if ReturnProductEvaluate.requiresReason}
+返品理由確認：{!ReturnProductEvaluate.requiresReason}
+{/if}
+
+{#if ReturnProductEvaluate.isReturnable}
+返品可否判定：{!ReturnProductEvaluate.isReturnable}
+{/if}
+
+{#if ReturnProductEvaluate.reasonAccepted}
+理由の妥当性：{!ReturnProductEvaluate.reasonAccepted}
+{/if}
+
+{#if ReturnProductEvaluate.reasonCategory}
+理由カテゴリ：{!ReturnProductEvaluate.reasonCategory}
+{/if}
+
+{#if ReturnProductEvaluate.policyName}
+適用ポリシー名：{!ReturnProductEvaluate.policyName}
+{/if}
+
+{#if ReturnProductEvaluate.policyType}
+ポリシー種別：{!ReturnProductEvaluate.policyType}
+{/if}
+
+{#if ReturnProductEvaluate.policyDescription}
+ポリシー説明：{!ReturnProductEvaluate.policyDescription}
+{/if}
+
+{#if ReturnProductEvaluate.primaryMessage}
+ご案内：{!ReturnProductEvaluate.primaryMessage}
+{/if}
+
+{#if ReturnProductEvaluate.secondaryMessage}
+補足案内：{!ReturnProductEvaluate.secondaryMessage}
+{/if}
+
+{#if ReturnProductEvaluate.exchangeMessage}
+交換案内：{!ReturnProductEvaluate.exchangeMessage}
+{/if}
+
+{#if ReturnProductEvaluate.alternativeMessage}
+代替案内：{!ReturnProductEvaluate.alternativeMessage}
+{/if}
+
+{#if ReturnProductEvaluate.status}
+ステータス：{!ReturnProductEvaluate.status}
+{/if}
+
+---
+出力例１（返品可能の場合）：  
+ご案内申し上げます。商品確認の結果、返品条件を満たしておりますが、返品理由をお聞かせいただく必要がございます。お手数をおかけいたしますが、返品理由をご記入いただけますでしょうか。
+
+また、返品ポリシーに基づき、衣料品はサイズ違いに限り7日以内の交換が可能です。破損やほつれがある場合は、到着後14日以内に返品が可能となります。何卒よろしくお願いいたします。
+
+出力例２（返品不可の場合）：  
+ご案内申し上げます。申し訳ございませんが、この商品の返品はポリシーによりお受けできません。代わりに交換をご提案させていただきますが、現在交換用の在庫がございません。代わりに、以下の似たタイプの別商品をご紹介いたします。
+---
+商品名：〇〇ブリ / 商品コード：SEAFOOD-XXX / 価格：¥6,000
+商品名：〇〇イカ / 商品コード：SEAFOOD-XXX / 価格：¥6,000
+商品名：〇〇アナゴ / 商品コード：SEAFOOD-XXX / 価格：¥7,000
+商品名：〇〇ブリ / 商品コード：SEAFOOD-XXX / 価格：¥7,000
+商品名：〇〇エビ / 商品コード：SEAFOOD-XXX / 価格：¥7,000
+---
+ご検討いただけますと幸いです。
+</stringValue>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <environments>Default</environments>
+    <interviewLabel>返品評価フロー {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>返品評価フロー</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>PromptFlow</processType>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>ReturnProductEvaluate</targetReference>
+        </connector>
+        <triggerType>Capability</triggerType>
+    </start>
+    <status>Active</status>
+    <variables>
+        <description>返品対象商品</description>
+        <name>var_productIdentifier</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>

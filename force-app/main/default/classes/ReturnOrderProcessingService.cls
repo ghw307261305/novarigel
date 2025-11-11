@@ -1,24 +1,30 @@
+/**
+ * @description       : 
+ * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+ * @group             : 
+ * @last modified on  : 11-11-2025
+ * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+**/
 public with sharing class ReturnOrderProcessingService {
 
-  public class Request {
-    @AuraEnabled
-    @InvocableVariable
+  public class ReturnOrderRequest {
+    @InvocableVariable(required=true)
     public String orderNumber;
 
-    @AuraEnabled
-    @InvocableVariable
+    @InvocableVariable(required=true)
     public String productIdentifier;
 
-    @AuraEnabled
     @InvocableVariable
-    public Decimal quantity;
+    public String quantity;
 
-    @AuraEnabled
     @InvocableVariable
     public String returnReason;
+
+    @InvocableVariable
+    public String returnDetailReason;
   }
 
-  public class Response {
+  public class ReturnOrderResponse {
     @AuraEnabled
     @InvocableVariable
     public Boolean success;
@@ -55,12 +61,12 @@ public with sharing class ReturnOrderProcessingService {
     String errorMessage;
   }
 
-  private static Response buildErrorResponse(
+  private static ReturnOrderResponse buildErrorResponse(
     String status,
     String primaryMessage,
     String secondaryMessage
   ) {
-    Response response = new Response();
+    ReturnOrderResponse response = new ReturnOrderResponse();
     response.success = false;
     response.status = status;
     response.primaryMessage = primaryMessage;
@@ -72,7 +78,7 @@ public with sharing class ReturnOrderProcessingService {
   }
 
   @AuraEnabled
-  public static Response processReturn(Request request) {
+  public static ReturnOrderResponse processReturn(ReturnOrderRequest request) {
     if (request == null) {
       return buildErrorResponse(
         'INVALID_REQUEST',
@@ -95,7 +101,21 @@ public with sharing class ReturnOrderProcessingService {
     String normalizedReturnReason = request.returnReason != null
       ? request.returnReason.trim()
       : null;
-    Decimal quantity = request.quantity;
+
+    String normalizedReturnDetailReason = request.returnDetailReason != null
+      ? request.returnDetailReason.trim()
+      : null;
+
+    if (String.isBlank(normalizedReturnReason)) {
+      normalizedReturnReason = null;
+    }
+
+    if (String.isBlank(normalizedReturnDetailReason)) {
+      normalizedReturnDetailReason = null;
+    }
+
+    // Decimal quantity = Decimal.valueOf(request.quantity);
+    Decimal quantity = 1;
 
     String validationError = validateInputs(
       normalizedOrderNumber,
@@ -112,7 +132,7 @@ public with sharing class ReturnOrderProcessingService {
     //   normalizedReturnReason
     // );
 
-    Response response = new Response();
+    ReturnOrderResponse response = new ReturnOrderResponse();
     // response.evaluation = evaluation;
 
     // if (evaluation == null) {
@@ -137,7 +157,8 @@ public with sharing class ReturnOrderProcessingService {
       resolvedProductIdentifier,
       resolvedProduct != null ? resolvedProduct.Id : null,
       quantity,
-      normalizedReturnReason
+      normalizedReturnReason,
+      normalizedReturnDetailReason
     );
 
     if (outcome.success) {
@@ -164,9 +185,9 @@ public with sharing class ReturnOrderProcessingService {
   @InvocableMethod(
     label = '返品注文処理' description = 'Flow から返品注文を作成します。'
   )
-  public static List<Response> processReturnFromFlow(List<Request> requests) {
+  public static List<ReturnOrderResponse> processReturnFromFlow(List<ReturnOrderRequest> requests) {
     if (requests == null || requests.isEmpty()) {
-      return new List<Response>{
+      return new List<ReturnOrderResponse>{
         buildErrorResponse(
           'INVALID_REQUEST',
           '返品手続きを進めるには注文情報が必要です。',
@@ -175,8 +196,8 @@ public with sharing class ReturnOrderProcessingService {
       };
     }
 
-    List<Response> responses = new List<Response>();
-    for (Request request : requests) {
+    List<ReturnOrderResponse> responses = new List<ReturnOrderResponse>();
+    for (ReturnOrderRequest request : requests) {
       responses.add(processReturn(request));
     }
 
@@ -252,7 +273,8 @@ public with sharing class ReturnOrderProcessingService {
     String productIdentifier,
     Id productId,
     Decimal quantity,
-    String returnReason
+    String returnReason,
+    String returnDetailReason
   ) {
     ReturnOrderOutcome outcome = new ReturnOrderOutcome();
 
@@ -293,6 +315,7 @@ public with sharing class ReturnOrderProcessingService {
         orderItemRecord,
         quantity,
         returnReason,
+        returnDetailReason,
         outcome
       );
       if (returnOrderLineItem == null) {
@@ -444,6 +467,7 @@ public with sharing class ReturnOrderProcessingService {
     OrderItem orderItem,
     Decimal quantity,
     String returnReason,
+    String returnDetailReason,
     ReturnOrderOutcome outcome
   ) {
     Schema.SObjectType typeInfo = Schema.getGlobalDescribe()
@@ -486,7 +510,8 @@ public with sharing class ReturnOrderProcessingService {
 
     setDecimalField(record, fields, 'Quantity', quantity);
     setDecimalField(record, fields, 'UnitPrice', orderItem.UnitPrice);
-    setTextField(record, fields, 'ReturnReason', returnReason);
+    setTextField(record, fields, 'ReasonForReturn', returnReason);
+    setTextField(record, fields, 'ReturnDetailReason__c', returnDetailReason);
     setTextField(record, fields, 'ReturnStatus__c', '受付待ち');
 
     populateRequiredDefaults(record, describe);

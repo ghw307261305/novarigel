@@ -43,10 +43,10 @@ public with sharing class ReturnInspectionSimpleService {
         }
         
         Map<Id, List<ImageReq>> imagesByRecord = buildImages(recordIds);
-        
         List<Response> results = new List<Response>();
         for (Request req : requests) {
             List<ImageReq> images = imagesByRecord.get(req.RelatedEntity.Id);
+        	
             if (images == null || images.isEmpty()) {
                 throw new FlowException(
                     'No files found for record ' + req.RelatedEntity.Id + '.'
@@ -70,6 +70,7 @@ public with sharing class ReturnInspectionSimpleService {
         String resJson = callLambdaJson(payload);
         Response res = new Response();
         res.Prompt = resJson;
+        System.debug(res);
         return res;
     }
     
@@ -149,22 +150,43 @@ public with sharing class ReturnInspectionSimpleService {
         req.setHeader('Content-Type', 'application/json');
         req.setTimeout(120000);
         req.setBody(JSON.serialize(payload));
-        
+        System.debug(payload);
+    
         Http http = new Http();
         HttpResponse res = http.send(req);
         Integer sc = res.getStatusCode();
         String body = res.getBody();
-        
+    
+        // 503 时不返回结果
         if (sc == 503) {
-            return body;
+            return '[]';
         }
-        
         if (sc < 200 || sc >= 300) {
             throw new AuraHandledException('Lambda error: ' + res.getStatus() + ' ' + body);
         }
-        
-        return body;
+    
+        System.debug(body);
+    
+        // 解析并只保留需要的字段
+        Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(body);
+        List<Object> results = parsed != null ? (List<Object>) parsed.get('results') : null;
+    
+        List<Object> filtered = new List<Object>();
+        if (results != null) {
+            for (Object o : results) {
+                Map<String, Object> item = (Map<String, Object>) o;
+                Map<String, Object> out = new Map<String, Object>();
+                String r = String.valueOf(item.get('result'));
+                if (r != null) out.put('result', r);
+                if ('ng' == r && item.containsKey('ng_reason')) {
+                    out.put('ng_reason', item.get('ng_reason'));
+                }
+                filtered.add(out);
+            }
+        }
+        return JSON.serialize(filtered);
     }
+
     
     private static String deriveFileName(ContentVersion cv) {
         String base = cv.PathOnClient;
