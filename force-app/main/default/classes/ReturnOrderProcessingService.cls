@@ -98,17 +98,11 @@ public with sharing class ReturnOrderProcessingService {
       normalizedProductIdentifier,
       resolvedProduct
     );
-    String normalizedReturnReason = request.returnReason != null
-      ? request.returnReason.trim()
-      : null;
-
+    String normalizedReturnReason = normalizeReturnReason(request.returnReason);
+    
     String normalizedReturnDetailReason = request.returnDetailReason != null
       ? request.returnDetailReason.trim()
       : null;
-
-    if (String.isBlank(normalizedReturnReason)) {
-      normalizedReturnReason = null;
-    }
 
     if (String.isBlank(normalizedReturnDetailReason)) {
       normalizedReturnDetailReason = null;
@@ -508,7 +502,7 @@ public with sharing class ReturnOrderProcessingService {
       orderItem.PricebookEntryId
     );
 
-    setDecimalField(record, fields, 'Quantity', quantity);
+    setDecimalField(record, fields, 'QuantityReturned', quantity);
     setDecimalField(record, fields, 'UnitPrice', orderItem.UnitPrice);
     setTextField(record, fields, 'ReasonForReturn', returnReason);
     setTextField(record, fields, 'ReturnDetailReason__c', returnDetailReason);
@@ -771,5 +765,63 @@ public with sharing class ReturnOrderProcessingService {
     }
 
     return returnOrderId != null ? (String) returnOrderId : null;
+  }
+
+  private static String normalizeReturnReason(String rawReason) {
+    if (String.isBlank(rawReason)) {
+      return null;
+    }
+
+    String trimmed = rawReason.trim();
+    String extracted = extractReasonValueFromJson(trimmed);
+    if (!String.isBlank(extracted)) {
+      return extracted;
+    }
+
+    return trimmed;
+  }
+
+  private static String extractReasonValueFromJson(String candidate) {
+    if (String.isBlank(candidate) || !candidate.startsWith('{')) {
+      return null;
+    }
+
+    try {
+      Object deserialized = JSON.deserializeUntyped(candidate);
+      if (deserialized instanceof Map<String, Object>) {
+        Map<String, Object> payload = (Map<String, Object>) deserialized;
+        if (payload != null && !payload.isEmpty()) {
+          List<String> preferredKeys = new List<String>{
+            'value',
+            'category',
+            'label'
+          };
+          for (String key : preferredKeys) {
+            if (payload.containsKey(key)) {
+              Object value = payload.get(key);
+              if (value instanceof String) {
+                String stringValue = ((String) value).trim();
+                if (!String.isBlank(stringValue)) {
+                  return stringValue;
+                }
+              }
+            }
+          }
+
+          for (Object value : payload.values()) {
+            if (value instanceof String) {
+              String stringValue = ((String) value).trim();
+              if (!String.isBlank(stringValue)) {
+                return stringValue;
+              }
+            }
+          }
+        }
+      }
+    } catch (Exception ex) {
+      // Ignore malformed JSON payloads and fall back to the original value.
+    }
+
+    return null;
   }
 }
