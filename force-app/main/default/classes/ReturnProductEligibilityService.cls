@@ -1,10 +1,10 @@
 /**
- * @description       : 
+ * @description       :
  * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
- * @group             : 
+ * @group             :
  * @last modified on  : 11-08-2025
  * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
-**/
+ **/
 public with sharing class ReturnProductEligibilityService {
   public class ProductEvaluation {
     public ReturnEligibilityService.EvaluationResult result;
@@ -19,7 +19,10 @@ public with sharing class ReturnProductEligibilityService {
     public String productIdentifier;
   }
 
-  @InvocableMethod(label='返品対象商品の判定' description='商品情報に基づき返品ポリシーを確認し、理由判定フローへ渡すための情報を返します。')
+  @InvocableMethod(
+    label='返品対象商品の判定'
+    description='商品情報に基づき返品ポリシーを確認し、理由判定フローへ渡すための情報を返します。'
+  )
   public static List<ReturnEligibilityService.EvaluationResult> evaluateForFlow(
     List<ProductEvaluationInput> inputs
   ) {
@@ -109,6 +112,11 @@ public with sharing class ReturnProductEligibilityService {
     if (evaluation.result.availableReasonCategories != null) {
       evaluation.result.availableReasonCategories.clear();
     }
+    populateRecommendationsForEligibleReturn(
+      evaluation.result,
+      evaluation.product,
+      evaluation.result.productUnitPrice
+    );
     return evaluation;
   }
 
@@ -222,7 +230,13 @@ public with sharing class ReturnProductEligibilityService {
   ) {
     result.primaryMessage = '申し訳ございません。この商品の返品ポリシー情報が見つかりませんでした。';
     result.secondaryMessage = '代わりに交換はいかがでしょうか？';
-    populateExchangeOptions(result, product, null);
+    populateExchangeOptions(
+      result,
+      product,
+      null,
+      '在庫がございます。サイズ／色違いの商品をお送りできますが、よろしいでしょうか？',
+      '申し訳ございません。現在交換用の在庫がございませんが、似たタイプの別商品をおすすめできます。'
+    );
   }
 
   private static void applyReturnNotAllowedState(
@@ -232,17 +246,25 @@ public with sharing class ReturnProductEligibilityService {
   ) {
     result.primaryMessage = '申し訳ございませんが、この商品の返品はポリシーによりお受けできません。';
     result.secondaryMessage = '代わりに交換はいかがでしょうか？';
-    populateExchangeOptions(result, product, basePrice);
+    populateExchangeOptions(
+      result,
+      product,
+      basePrice,
+      '在庫がございます。サイズ／色違いの商品をお送りできますが、よろしいでしょうか？',
+      '申し訳ございません。現在交換用の在庫がございませんが、似たタイプの別商品をおすすめできます。'
+    );
   }
 
   private static void populateExchangeOptions(
     ReturnEligibilityService.EvaluationResult result,
     Product2 product,
-    Decimal basePrice
+    Decimal basePrice,
+    String exchangeAvailableMessage,
+    String exchangeUnavailableMessage
   ) {
     result.exchangeOptions = findExchangeOptions(product);
     if (!result.exchangeOptions.isEmpty()) {
-      result.exchangeMessage = '在庫がございます。サイズ／色違いの商品をお送りできますが、よろしいでしょうか？';
+      result.exchangeMessage = exchangeAvailableMessage;
       if (result.alternativeProducts == null) {
         result.alternativeProducts = new List<ReturnEligibilityService.ProductSuggestion>();
       } else {
@@ -252,13 +274,35 @@ public with sharing class ReturnProductEligibilityService {
       return;
     }
 
-    result.exchangeMessage = '申し訳ございません。現在交換用の在庫がございませんが、似たタイプの別商品をおすすめできます。';
+    result.exchangeMessage = exchangeUnavailableMessage;
     result.alternativeProducts = findAlternativeProducts(product, basePrice);
     if (!result.alternativeProducts.isEmpty()) {
       result.alternativeMessage = buildAlternativesMessage(
         result.alternativeProducts
       );
     } else {
+      result.alternativeMessage = null;
+    }
+  }
+
+  private static void populateRecommendationsForEligibleReturn(
+    ReturnEligibilityService.EvaluationResult result,
+    Product2 product,
+    Decimal basePrice
+  ) {
+    populateExchangeOptions(
+      result,
+      product,
+      basePrice,
+      '交換も可能です。サイズやカラーのバリエーションをご案内できます。',
+      '交換や別商品のご提案も可能です。気になる商品があればお知らせください。'
+    );
+
+    if (
+      result.exchangeOptions.isEmpty() &&
+      (result.alternativeProducts == null ||
+      result.alternativeProducts.isEmpty())
+    ) {
       result.alternativeMessage = null;
     }
   }
