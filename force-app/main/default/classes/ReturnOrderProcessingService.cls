@@ -2,7 +2,7 @@
  * @description       : 
  * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
  * @group             : 
- * @last modified on  : 11-11-2025
+ * @last modified on  : 11-12-2025
  * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
 **/
 public with sharing class ReturnOrderProcessingService {
@@ -267,7 +267,7 @@ public with sharing class ReturnOrderProcessingService {
     String productIdentifier,
     Id productId,
     Decimal quantity,
-    String returnReason,
+    String normalizedReturnReason,
     String returnDetailReason
   ) {
     ReturnOrderOutcome outcome = new ReturnOrderOutcome();
@@ -296,7 +296,7 @@ public with sharing class ReturnOrderProcessingService {
     try {
       SObject returnOrder = buildReturnOrderRecord(
         orderRecord,
-        returnReason,
+        normalizedReturnReason,
         outcome
       );
       if (returnOrder == null) {
@@ -308,7 +308,7 @@ public with sharing class ReturnOrderProcessingService {
         returnOrder,
         orderItemRecord,
         quantity,
-        returnReason,
+        normalizedReturnReason,
         returnDetailReason,
         outcome
       );
@@ -450,7 +450,7 @@ public with sharing class ReturnOrderProcessingService {
     setReferenceField(record, fields, 'OrderId', orderRecord.Id);
     setReferenceField(record, fields, 'AccountId', orderRecord.AccountId);
     setReferenceField(record, fields, 'OwnerId', UserInfo.getUserId());
-    setTextField(record, fields, 'ReturnReason', returnReason);
+    // setTextField(record, fields, 'ReturnReason', returnReason);
 
     populateRequiredDefaults(record, describe);
     return record;
@@ -460,7 +460,7 @@ public with sharing class ReturnOrderProcessingService {
     SObject returnOrder,
     OrderItem orderItem,
     Decimal quantity,
-    String returnReason,
+    String normalizedReturnReason,
     String returnDetailReason,
     ReturnOrderOutcome outcome
   ) {
@@ -504,7 +504,7 @@ public with sharing class ReturnOrderProcessingService {
 
     setDecimalField(record, fields, 'QuantityReturned', quantity);
     setDecimalField(record, fields, 'UnitPrice', orderItem.UnitPrice);
-    setTextField(record, fields, 'ReasonForReturn', returnReason);
+    setTextField(record, fields, 'ReasonForReturn', normalizedReturnReason);
     setTextField(record, fields, 'ReturnDetailReason__c', returnDetailReason);
     setTextField(record, fields, 'ReturnStatus__c', '受付待ち');
 
