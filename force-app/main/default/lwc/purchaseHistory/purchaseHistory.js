@@ -30,9 +30,8 @@ export default class PurchaseHistory extends LightningElement {
   }
 
   get agentforceChatContainerClass() {
-    return `agentforce-chat-container${
-      this.isAgentforceChatVisible ? " agentforce-chat-container--visible" : ""
-    }`;
+    return `agentforce-chat-container${this.isAgentforceChatVisible ? " agentforce-chat-container--visible" : ""
+      }`;
   }
 
   get agentforceChatAriaHidden() {

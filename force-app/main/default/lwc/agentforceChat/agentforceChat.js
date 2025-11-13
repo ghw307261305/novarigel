@@ -862,5 +862,4 @@ export default class AgentforceChat extends LightningElement {
         this.messages = this.messages.filter((message) => message.id !== statusId);
         this.statusMessageId = undefined;
     }
-
 }
