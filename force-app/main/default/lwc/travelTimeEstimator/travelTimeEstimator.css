@@ -1,0 +1,23 @@
+.result-card {
+  border: 1px solid var(--lwc-colorBorder, #d8dde6);
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  background-color: white;
+  box-shadow: var(--lwc-shadowCard, 0 2px 2px 0 rgba(0, 0, 0, 0.1));
+}
+
+.result-mode {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.result-duration {
+  font-size: 1.125rem;
+  color: var(--lwc-colorTextLabel, #3e3e3c);
+}
+
+.result-error {
+  color: var(--lwc-colorTextError, #c23934);
+  font-size: 0.9rem;
+}
