@@ -1,0 +1,62 @@
+<template>
+  <lightning-card title={cardTitle} icon-name="standard:travel">
+    <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+      <lightning-input
+        label="出発地"
+        value={origin}
+        onchange={handleOriginChange}
+        placeholder="出発地の住所を入力してください"
+        class="slds-m-bottom_small"
+      ></lightning-input>
+      <lightning-input
+        label="到着地"
+        value={destination}
+        onchange={handleDestinationChange}
+        placeholder="到着地の住所を入力してください"
+        class="slds-m-bottom_small"
+      ></lightning-input>
+      <lightning-button
+        label="所要時間を検索"
+        variant="brand"
+        onclick={handleCalculate}
+        disabled={isLoading}
+      ></lightning-button>
+    </div>
+
+    <template if:true={isLoading}>
+      <div class="slds-is-relative slds-p-around_medium">
+        <lightning-spinner alternative-text="検索中"></lightning-spinner>
+      </div>
+    </template>
+
+    <template if:true={hasResults}>
+      <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+        <lightning-layout vertical-align="stretch" multiple-rows>
+          <template for:each={results} for:item="result">
+            <lightning-layout-item
+              key={result.mode}
+              size="12"
+              class="slds-p-vertical_x-small"
+            >
+              <div class="result-card">
+                <div class="result-mode">{result.modeLabel}</div>
+                <template if:true={result.isSuccess}>
+                  <div class="result-duration">{result.durationText}</div>
+                </template>
+                <template if:false={result.isSuccess}>
+                  <div class="result-error">{result.errorMessage}</div>
+                </template>
+              </div>
+            </lightning-layout-item>
+          </template>
+        </lightning-layout>
+      </div>
+    </template>
+
+    <template if:true={error}>
+      <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+        <div class="result-error">{error}</div>
+      </div>
+    </template>
+  </lightning-card>
+</template>
