@@ -1,8 +1,52 @@
 public with sharing class TravelTimeController {
-  private static final List<String> SUPPORTED_MODES = new List<String>{
-    'driving',
-    'walking',
-    'transit'
+  private class ModeParameter {
+    String name;
+    String value;
+
+    ModeParameter(String name, String value) {
+      this.name = name;
+      this.value = value;
+    }
+  }
+
+  private class ModeConfig {
+    String key;
+    String apiMode;
+    List<ModeParameter> extraParams;
+
+    ModeConfig(String key, String apiMode, List<ModeParameter> extraParams) {
+      this.key = key;
+      this.apiMode = apiMode;
+      this.extraParams = extraParams;
+    }
+
+    Boolean hasParam(String paramName) {
+      if (extraParams == null) {
+        return false;
+      }
+
+      for (ModeParameter param : extraParams) {
+        if (param != null && paramName == param.name) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+  }
+
+  private static final List<ModeConfig> SUPPORTED_CONFIGS = new List<ModeConfig>{
+    new ModeConfig('driving', 'driving', null),
+    new ModeConfig('walking', 'walking', null),
+    new ModeConfig('transit', 'transit', null),
+    new ModeConfig(
+      'transit_mixed',
+      'transit',
+      new List<ModeParameter>{
+        new ModeParameter('transit_mode', 'bus|subway|train|tram|rail'),
+        new ModeParameter('transit_routing_preference', 'less_walking')
+      }
+    )
   };
 
   public class TravelOption {
@@ -29,8 +73,8 @@ public with sharing class TravelTimeController {
 
     List<TravelOption> results = new List<TravelOption>();
 
-    for (String mode : SUPPORTED_MODES) {
-      results.add(fetchTravelTime(origin, destination, mode));
+    for (ModeConfig config : SUPPORTED_CONFIGS) {
+      results.add(fetchTravelTime(origin, destination, config));
     }
 
     return results;
@@ -40,18 +84,18 @@ public with sharing class TravelTimeController {
   private static TravelOption fetchTravelTime(
     String origin,
     String destination,
-    String mode
+    ModeConfig config
   ) {
     Http http = new Http();
     HttpRequest request = new HttpRequest();
     request.setMethod('GET');
     request.setTimeout(20000);
-    request.setEndpoint(buildEndpoint(origin, destination, mode));
+    request.setEndpoint(buildEndpoint(origin, destination, config));
 
     HttpResponse response = http.send(request);
 
     TravelOption option = new TravelOption();
-    option.mode = mode;
+    option.mode = config.key;
 
     if (response == null) {
       option.status = 'ERROR';
@@ -123,7 +167,7 @@ public with sharing class TravelTimeController {
   private static String buildEndpoint(
     String origin,
     String destination,
-    String mode
+    ModeConfig config
   ) {
     String baseUrl = 'https://maps.googleapis.com/maps/api/distancematrix/json';
     String endpoint =
@@ -133,11 +177,29 @@ public with sharing class TravelTimeController {
       '&destinations=' +
       EncodingUtil.urlEncode(destination, 'UTF-8') +
       '&mode=' +
-      EncodingUtil.urlEncode(mode, 'UTF-8') +
-      '&language=ja';
-    if ('transit'.equalsIgnoreCase(mode)) {
+      EncodingUtil.urlEncode(config.apiMode, 'UTF-8');
+
+    if (config.extraParams != null) {
+      for (ModeParameter param : config.extraParams) {
+        if (param != null && !String.isBlank(param.name)) {
+          String value = param.value == null ? '' : param.value;
+          endpoint +=
+            '&' +
+            param.name +
+            '=' +
+            EncodingUtil.urlEncode(value, 'UTF-8');
+        }
+      }
+    }
+
+    if (
+      'transit'.equalsIgnoreCase(config.apiMode) &&
+      !config.hasParam('departure_time')
+    ) {
       endpoint += '&departure_time=now';
     }
+
+    endpoint += '&language=ja';
 
     String apiKey = System.Label.Google_Maps_API_Key;
     if (String.isBlank(apiKey)) {

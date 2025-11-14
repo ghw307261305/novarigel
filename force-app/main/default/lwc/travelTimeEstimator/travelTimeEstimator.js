@@ -4,7 +4,8 @@ import getTravelTimes from "@salesforce/apex/TravelTimeController.getTravelTimes
 const MODE_LABELS = {
   driving: "車での移動",
   walking: "徒歩",
-  transit: "公共交通機関"
+  transit: "公共交通機関",
+  transit_mixed: "公共交通機関＋徒歩"
 };
 
 export default class TravelTimeEstimator extends LightningElement {

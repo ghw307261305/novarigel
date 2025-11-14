@@ -54,15 +54,22 @@ private class TravelTimeControllerTest {
     Test.stopTest();
 
     System.assertEquals(
-      3,
+      4,
       results.size(),
       'Should return travel time for each supported mode'
     );
+    Set<String> modes = new Set<String>();
     for (TravelTimeController.TravelOption option : results) {
       System.assertEquals('OK', option.status);
       System.assertNotEquals(null, option.durationText);
       System.assertEquals(Integer.valueOf(600), option.durationValue);
+      modes.add(option.mode);
     }
+
+    System.assert(
+      modes.contains('transit_mixed'),
+      'transit_mixed result should be present'
+    );
   }
 
   @IsTest
