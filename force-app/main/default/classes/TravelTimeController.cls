@@ -126,15 +126,17 @@ public with sharing class TravelTimeController {
     String mode
   ) {
     String baseUrl = 'https://maps.googleapis.com/maps/api/distancematrix/json';
-    StringBuilder endpoint = new StringBuilder(baseUrl);
-    endpoint.append('?origins=' + EncodingUtil.urlEncode(origin, 'UTF-8'));
-    endpoint.append(
-      '&destinations=' + EncodingUtil.urlEncode(destination, 'UTF-8')
-    );
-    endpoint.append('&mode=' + EncodingUtil.urlEncode(mode, 'UTF-8'));
-    endpoint.append('&language=ja');
+    String endpoint =
+      baseUrl +
+      '?origins=' +
+      EncodingUtil.urlEncode(origin, 'UTF-8') +
+      '&destinations=' +
+      EncodingUtil.urlEncode(destination, 'UTF-8') +
+      '&mode=' +
+      EncodingUtil.urlEncode(mode, 'UTF-8') +
+      '&language=ja';
     if ('transit'.equalsIgnoreCase(mode)) {
-      endpoint.append('&departure_time=now');
+      endpoint += '&departure_time=now';
     }
 
     String apiKey = System.Label.Google_Maps_API_Key;
@@ -144,7 +146,7 @@ public with sharing class TravelTimeController {
       );
     }
 
-    endpoint.append('&key=' + EncodingUtil.urlEncode(apiKey, 'UTF-8'));
-    return endpoint.toString();
+    endpoint += '&key=' + EncodingUtil.urlEncode(apiKey, 'UTF-8');
+    return endpoint;
   }
 }
