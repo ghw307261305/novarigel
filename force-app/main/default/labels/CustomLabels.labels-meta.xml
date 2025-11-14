@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>Google_Maps_API_Key</fullName>
+        <categories>Integration</categories>
+        <language>ja</language>
+        <protected>false</protected>
+        <shortDescription>Google Maps API Key</shortDescription>
+        <value
+    >デプロイ後にここを実際の Google Maps API キーに置き換えてください</value>
+    </labels>
+</CustomLabels>
