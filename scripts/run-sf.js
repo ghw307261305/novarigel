@@ -54,6 +54,39 @@ function resolveSfBin() {
   return candidateBins().find((candidate) => existsSync(candidate));
 }
 
+function isLightningDevCommand(commandArgs) {
+  return commandArgs[0] === "lightning" && commandArgs[1] === "dev";
+}
+
+function interruptedExitCode(result) {
+  if (result.status === 130) {
+    return 130;
+  }
+
+  if (result.signal === "SIGINT" || result.signal === "SIGBREAK") {
+    return 130;
+  }
+
+  return null;
+}
+
+function stderrText(result) {
+  if (!result.stderr) {
+    return "";
+  }
+
+  return Buffer.isBuffer(result.stderr)
+    ? result.stderr.toString("utf8")
+    : String(result.stderr);
+}
+
+function stripOclifInterruptedExitStack(text) {
+  return text.replace(
+    /^[^\r\n]*@oclif[\\/].*?[\\/]errors[\\/]exit\.js:6\r?\n\s*throw new exit_1\.ExitError\(code\);\r?\n\s*\^\r?\n\r?\nExitError: EEXIT: 130[\s\S]*?\r?\n\}\r?\n?/m,
+    ""
+  );
+}
+
 const sfBin = resolveSfBin();
 
 if (!sfBin) {
@@ -62,6 +95,8 @@ if (!sfBin) {
 }
 
 let result;
+const lightningDev = isLightningDevCommand(args);
+const stdio = lightningDev ? ["inherit", "inherit", "pipe"] : "inherit";
 
 if (isWindows() && /\.cmd$/i.test(sfBin)) {
   const quoteForPowerShell = (arg) => `'${String(arg).replace(/'/g, "''")}'`;
@@ -72,16 +107,33 @@ if (isWindows() && /\.cmd$/i.test(sfBin)) {
     "powershell.exe",
     ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
     {
-      stdio: "inherit"
+      stdio
     }
   );
 } else {
-  result = spawnSync(sfBin, args, { stdio: "inherit" });
+  result = spawnSync(sfBin, args, { stdio });
 }
 
 if (result.error) {
   console.error(result.error.message);
   process.exit(1);
+}
+
+const interruptedCode = interruptedExitCode(result);
+const rawStderr = stderrText(result);
+
+if (lightningDev && rawStderr) {
+  const filteredStderr = stripOclifInterruptedExitStack(rawStderr);
+
+  if (filteredStderr.trim()) {
+    process.stderr.write(filteredStderr);
+  }
+} else if (rawStderr) {
+  process.stderr.write(rawStderr);
+}
+
+if (lightningDev && interruptedCode === 130) {
+  process.exit(0);
 }
 
 process.exit(result.status ?? 1);
