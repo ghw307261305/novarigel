@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Delete_Etc</fullName>
+    <booleanFilter>1 OR 2 OR 3</booleanFilter>
+    <columns>NAME</columns>
+    <columns>Progress__c</columns>
+    <columns>ApplicationDate__c</columns>
+    <columns>Touroku_kbn__c</columns>
+    <columns>Bank_Name__c</columns>
+    <columns>Sex__c</columns>
+    <columns>Nendai__c</columns>
+    <columns>EmailAdress__c</columns>
+    <columns>Tel__c</columns>
+    <columns>Experience__c</columns>
+    <columns>Interview_Name__c</columns>
+    <columns>Before_date__c</columns>
+    <columns>Attendance__c</columns>
+    <columns>ID_MakeDate__c</columns>
+    <columns>Delete_Date__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Status__c</field>
+        <operation>equals</operation>
+        <value>ID発行済</value>
+    </filters>
+    <filters>
+        <field>Status__c</field>
+        <operation>equals</operation>
+        <value>削除</value>
+    </filters>
+    <filters>
+        <field>Status__c</field>
+        <operation>equals</operation>
+        <value>ID失敗</value>
+    </filters>
+    <label>109_ID発行済</label>
+    <sharedTo>
+        <allInternalUsers />
+    </sharedTo>
+</ListView>

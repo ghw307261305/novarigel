@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>NameQualification_N_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND(RecordType.Name=&quot;個人&quot;,OtherQualification__c=FALSE,NameQualification__c!=&quot;&quot;)</errorConditionFormula>
+    <errorDisplayField>OtherQualification__c</errorDisplayField>
+    <errorMessage>その他の資格の有無をご確認ください。</errorMessage>
+</ValidationRule>

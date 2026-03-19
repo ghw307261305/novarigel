@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WebLink xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>MendanSendBtn</fullName>
+    <availability>online</availability>
+    <displayType>button</displayType>
+    <linkType>javascript</linkType>
+    <masterLabel>研修通知</masterLabel>
+    <openType>onClickJavaScript</openType>
+    <protected>false</protected>
+    <url>{!REQUIRESCRIPT(&apos;/soap/ajax/47.0/connection.js&apos;)}
+{!REQUIRESCRIPT(&apos;/soap/ajax/47.0/apex.js&apos;)}
+
+if(&apos;{!Human__c.Status__c}&apos; == &apos;受付&apos;){
+var id = &apos;{!Human__c.Id}&apos;;
+
+var result = sforce.apex.execute(&apos;SFTR_O_HumanWebService&apos;,&apos;sendMendan&apos;,{itemId:id});
+
+if (result == &apos;研修省略&apos;){
+alert(&apos;登録前研修会は省略しました&apos;);
+location.reload();
+} else if(result == &apos;研修通知&apos;){
+alert(&apos;登録前研修会は通知しました&apos;);
+location.reload();
+} else {
+alert(&apos;登録前研修会の通知が失敗しました&apos;);
+}
+
+} else {
+//ステータス＝受付以外の場合
+alert(&apos;この処理は実行できません。&apos;);
+}</url>
+</WebLink>

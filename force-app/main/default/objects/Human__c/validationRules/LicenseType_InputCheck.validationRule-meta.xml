@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>LicenseType_InputCheck</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND(RecordType.Name=&quot;個人&quot;,TeacherLicense__c=TRUE,LicenseType__c=&quot;&quot;)</errorConditionFormula>
+    <errorDisplayField>LicenseType__c</errorDisplayField>
+    <errorMessage>教員免許状の種類を入力してください。</errorMessage>
+</ValidationRule>

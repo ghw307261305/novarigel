@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ActivityForm__c</fullName>
+    <externalId>false</externalId>
+    <label>希望活動形態</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>MultiselectPicklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>有期労働・パートタイム</fullName>
+                <default>false</default>
+                <label>有期労働・パートタイム</label>
+            </value>
+            <value>
+                <fullName>有償ボランティア</fullName>
+                <default>false</default>
+                <label>有償ボランティア</label>
+            </value>
+            <value>
+                <fullName>無償ボランティア</fullName>
+                <default>false</default>
+                <label>無償ボランティア</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+    <visibleLines>3</visibleLines>
+</CustomField>

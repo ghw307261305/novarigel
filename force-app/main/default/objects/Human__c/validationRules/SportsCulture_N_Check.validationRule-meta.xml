@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SportsCulture_N_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND(RecordType.Name=&quot;個人&quot;,SportsCulture__c=FALSE,SportsCultureName__c!=&quot;&quot;)</errorConditionFormula>
+    <errorDisplayField>SportsCulture__c</errorDisplayField>
+    <errorMessage>運動・文化の資格の有無をご確認ください。</errorMessage>
+</ValidationRule>

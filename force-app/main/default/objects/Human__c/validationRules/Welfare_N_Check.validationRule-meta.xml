@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Welfare_N_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND(RecordType.Name=&quot;個人&quot;,Welfare__c=FALSE,WelfareName__c!=&quot;&quot;)</errorConditionFormula>
+    <errorDisplayField>Welfare__c</errorDisplayField>
+    <errorMessage>心理・福祉の資格の有無をご確認ください。</errorMessage>
+</ValidationRule>

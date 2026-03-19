@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WebLink xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>TakeBackBtn</fullName>
+    <availability>online</availability>
+    <displayType>button</displayType>
+    <linkType>javascript</linkType>
+    <masterLabel>取戻</masterLabel>
+    <openType>onClickJavaScript</openType>
+    <protected>false</protected>
+    <url>{!REQUIRESCRIPT(&apos;/soap/ajax/47.0/connection.js&apos;)}
+{!REQUIRESCRIPT(&apos;/soap/ajax/47.0/apex.js&apos;)}
+
+if (&apos;{!Interview__c.InterviewStatus__c}&apos; == &apos;公開中&apos;) {
+　
+var id = &apos;{!Interview__c.Id}&apos;;
+
+var result = sforce.apex.execute(&apos;SFTR_O_InterviewWebService&apos;, &apos;takeback&apos;, {itemId:id});
+
+if(result == &apos;成功&apos;){
+location.reload();
+}else{
+alert(&apos;取戻が失敗してしまった&apos;);
+}
+
+} else {
+alert(&apos;この処理が実行できません！&apos;);
+}</url>
+</WebLink>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Adress_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >OR(ISNULL( Adress__c ), ISBLANK(Adress__c )  )</errorConditionFormula>
+    <errorDisplayField>Adress__c</errorDisplayField>
+    <errorMessage>会場名を入力してください</errorMessage>
+</ValidationRule>

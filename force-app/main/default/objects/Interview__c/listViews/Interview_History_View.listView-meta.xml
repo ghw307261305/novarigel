@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Interview_History_View</fullName>
+    <columns>NAME</columns>
+    <columns>state__c</columns>
+    <columns>Room__c</columns>
+    <columns>DetailRoom__c</columns>
+    <columns>OpenDate__c</columns>
+    <columns>StartTime__c</columns>
+    <columns>Application__c</columns>
+    <columns>Empty__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>InterviewStatus__c</field>
+        <operation>equals</operation>
+        <value>終了</value>
+    </filters>
+    <filters>
+        <field>OpenDate__c</field>
+        <operation>lessThan</operation>
+        <value>TODAY</value>
+    </filters>
+    <label>003_研修履歴（掲載終了）</label>
+    <sharedTo>
+        <allInternalUsers />
+    </sharedTo>
+</ListView>

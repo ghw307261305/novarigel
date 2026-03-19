@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Access_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >OR(ISNULL( Access__c ), ISBLANK(Access__c )  )</errorConditionFormula>
+    <errorDisplayField>Access__c</errorDisplayField>
+    <errorMessage>アクセスを入力してください</errorMessage>
+</ValidationRule>

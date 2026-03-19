@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EndTime_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND( StartTime__c &gt;=  EndTime__c )</errorConditionFormula>
+    <errorDisplayField>StartTime__c</errorDisplayField>
+    <errorMessage>開始時刻・終了時刻を正しく入力してください</errorMessage>
+</ValidationRule>

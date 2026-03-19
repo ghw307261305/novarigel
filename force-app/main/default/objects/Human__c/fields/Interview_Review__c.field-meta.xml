@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Interview_Review__c</fullName>
+    <externalId>false</externalId>
+    <label>登録前面談の評価</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>A：優れている</fullName>
+                <default>false</default>
+                <label>A：優れている</label>
+            </value>
+            <value>
+                <fullName>B：普通</fullName>
+                <default>false</default>
+                <label>B：普通</label>
+            </value>
+            <value>
+                <fullName>C：劣っている</fullName>
+                <default>false</default>
+                <label>C：劣っている</label>
+            </value>
+            <value>
+                <fullName>面談未実施</fullName>
+                <default>false</default>
+                <label>面談未実施</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

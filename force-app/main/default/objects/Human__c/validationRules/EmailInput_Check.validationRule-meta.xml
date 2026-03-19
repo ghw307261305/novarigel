@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EmailInput_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND(RecordType.Name = &quot;個人&quot;,EmailAdress__c != EmailAdressCheck__c)</errorConditionFormula>
+    <errorDisplayField>EmailAdressCheck__c</errorDisplayField>
+    <errorMessage>正しいメールアドレスを入力してください。</errorMessage>
+</ValidationRule>

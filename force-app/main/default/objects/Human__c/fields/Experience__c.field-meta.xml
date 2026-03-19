@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Experience__c</fullName>
+    <externalId>false</externalId>
+    <label>学校活動経験</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>現在活動している</fullName>
+                <default>false</default>
+                <label>現在活動している</label>
+            </value>
+            <value>
+                <fullName>活動したことがある</fullName>
+                <default>false</default>
+                <label>活動したことがある</label>
+            </value>
+            <value>
+                <fullName>活動したことがない</fullName>
+                <default>false</default>
+                <label>活動したことがない</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

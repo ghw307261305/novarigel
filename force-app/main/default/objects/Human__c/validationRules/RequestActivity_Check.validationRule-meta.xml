@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>RequestActivity_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND (RecordType.Name = &quot;個人&quot;,ISBLANK(RequestActivity__c))</errorConditionFormula>
+    <errorDisplayField>RequestActivity__c</errorDisplayField>
+    <errorMessage>希望内容を選択してください。</errorMessage>
+</ValidationRule>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>TeachingLevel_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND (RecordType.Name = &quot;個人&quot;,OR(INCLUDES(RequestActivity__c,&quot;部活動指導(運動系)&quot;),INCLUDES(RequestActivity__c,&quot;部活動指導(文化系)&quot;)),ISBLANK(TeachingLevel__c))</errorConditionFormula>
+    <errorDisplayField>TeachingLevel__c</errorDisplayField>
+    <errorMessage>指導可能対象(レベル)を選択してください。</errorMessage>
+</ValidationRule>

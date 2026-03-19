@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Mendan_PlanView</fullName>
+    <columns>NAME</columns>
+    <columns>ApplicationDate__c</columns>
+    <columns>Touroku_kbn__c</columns>
+    <columns>Bank_Name__c</columns>
+    <columns>Sex__c</columns>
+    <columns>Nendai__c</columns>
+    <columns>EmailAdress__c</columns>
+    <columns>Tel__c</columns>
+    <columns>Experience__c</columns>
+    <columns>Interview_Name__c</columns>
+    <columns>Before_date__c</columns>
+    <columns>AnnouncementDate__c</columns>
+    <columns>ReplyDate__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Status__c</field>
+        <operation>equals</operation>
+        <value>研修通知</value>
+    </filters>
+    <filters>
+        <field>ReplyDate__c</field>
+        <operation>notEqual</operation>
+    </filters>
+    <label>102_研修・面談申込済（受講登録用）</label>
+    <sharedTo>
+        <allInternalUsers />
+    </sharedTo>
+</ListView>

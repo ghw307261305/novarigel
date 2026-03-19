@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ActivityForm_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND (RecordType.Name = &quot;個人&quot;, ISBLANK(ActivityForm__c) )</errorConditionFormula>
+    <errorDisplayField>ActivityForm__c</errorDisplayField>
+    <errorMessage>希望活動形態を選択してください。</errorMessage>
+</ValidationRule>

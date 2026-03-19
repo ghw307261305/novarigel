@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Telecommunications_N_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND(RecordType.Name=&quot;個人&quot;,Telecommunications__c=FALSE,TelecommunicationsName__c!=&quot;&quot;)</errorConditionFormula>
+    <errorDisplayField>Telecommunications__c</errorDisplayField>
+    <errorMessage>情報通信の資格の有無をご確認ください。</errorMessage>
+</ValidationRule>

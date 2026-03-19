@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Staff_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >OR(ISNULL( Staff__c ), ISBLANK(Staff__c )  )</errorConditionFormula>
+    <errorDisplayField>Staff__c</errorDisplayField>
+    <errorMessage>担当を入力してください</errorMessage>
+</ValidationRule>

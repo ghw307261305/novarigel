@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Nendai__c</fullName>
+    <externalId>false</externalId>
+    <formula
+  >IF( ISBLANK( Birthday__c )  ||  TEXT(Birthday__c) =&quot;1900-01-01&quot;, &quot;&quot;, 
+IF(OR(MONTH(today())-MONTH( Birthday__c )&gt;0, AND(MONTH(TODAY()) - MONTH(Birthday__c)&gt;=0, DAY(TODAY()) - DAY(Birthday__c)&gt;=0)),
+IF((MFLOOR((YEAR(TODAY()) - YEAR(Birthday__c))/10)*10)&lt;80,TEXT(MFLOOR((YEAR(TODAY()) - YEAR(Birthday__c))/10)*10) &amp; &quot;代&quot;,&quot;80代以上&quot;),
+IF((MFLOOR((YEAR(TODAY()) - YEAR(Birthday__c)-1)/10)*10)&lt;80,TEXT(MFLOOR((YEAR(TODAY()) - YEAR(Birthday__c)-1)/10)*10) &amp; &quot;代&quot;,&quot;80代以上&quot;)))</formula>
+    <label>年代</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

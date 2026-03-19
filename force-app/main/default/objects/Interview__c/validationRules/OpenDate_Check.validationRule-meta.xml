@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>OpenDate_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >OR(ISNULL( OpenDate__c ), ISBLANK(OpenDate__c )  )</errorConditionFormula>
+    <errorDisplayField>OpenDate__c</errorDisplayField>
+    <errorMessage>開催日を入力してください</errorMessage>
+</ValidationRule>

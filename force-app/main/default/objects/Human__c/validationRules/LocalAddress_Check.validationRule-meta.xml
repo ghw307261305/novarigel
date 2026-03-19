@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>LocalAddress_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND(RecordType.Name = &quot;個人&quot;, LocalAddress__c = &quot;&quot;)</errorConditionFormula>
+    <errorDisplayField>LocalAddress__c</errorDisplayField>
+    <errorMessage>都道府県以下の住所を入力してください。</errorMessage>
+</ValidationRule>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>NameQualification_InputCheck</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND(RecordType.Name=&quot;個人&quot;,OtherQualification__c=TRUE,NameQualification__c=&quot;&quot;)</errorConditionFormula>
+    <errorDisplayField>NameQualification__c</errorDisplayField>
+    <errorMessage>資格の名称を入力してください。</errorMessage>
+</ValidationRule>

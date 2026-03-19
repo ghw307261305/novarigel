@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DetailRoom_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >OR(ISNULL( DetailRoom__c ), ISBLANK(DetailRoom__c )  )</errorConditionFormula>
+    <errorDisplayField>DetailRoom__c</errorDisplayField>
+    <errorMessage>詳細を入力してください</errorMessage>
+</ValidationRule>

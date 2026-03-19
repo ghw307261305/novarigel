@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EnrollmentStart3_NULL_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND(RecordType.Name=&quot;個人&quot;,ISBLANK(EnrollmentStart3__c),NOT(ISBLANK(EnrollmentEnd3__c)))</errorConditionFormula>
+    <errorDisplayField>EnrollmentStart3__c</errorDisplayField>
+    <errorMessage>在籍期間(自)(3)を入力してください。</errorMessage>
+</ValidationRule>

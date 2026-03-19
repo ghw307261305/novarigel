@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>MedicalCare_N_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND(RecordType.Name=&quot;個人&quot;,MedicalCare__c=FALSE,MedicalCareName__c!=&quot;&quot;)</errorConditionFormula>
+    <errorDisplayField>MedicalCare__c</errorDisplayField>
+    <errorMessage>医療・看護の資格の有無をご確認ください。</errorMessage>
+</ValidationRule>

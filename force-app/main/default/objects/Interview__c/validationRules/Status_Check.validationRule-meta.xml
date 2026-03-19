@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Status_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND(ISPICKVAL(InterviewStatus__c, &quot;公開中&quot;),OR(ISCHANGED(Room__c),  ISCHANGED(Adress__c), ISCHANGED(DetailRoom__c) , ISCHANGED(Access__c),ISCHANGED(Staff__c),ISCHANGED(OpenDate__c),ISCHANGED(StartTime__c),ISCHANGED(EndTime__c),ISCHANGED(Capacity__c),ISCHANGED(TelRemake__c) ) )</errorConditionFormula>
+    <errorMessage>公開中場合、登録前研修会が編集できません。</errorMessage>
+</ValidationRule>

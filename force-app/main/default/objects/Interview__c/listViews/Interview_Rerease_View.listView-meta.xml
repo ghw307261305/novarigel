@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Interview_Rerease_View</fullName>
+    <columns>NAME</columns>
+    <columns>state__c</columns>
+    <columns>OpenDate__c</columns>
+    <columns>StartTime__c</columns>
+    <columns>EndTime__c</columns>
+    <columns>Empty__c</columns>
+    <columns>Capacity__c</columns>
+    <columns>Application__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>InterviewStatus__c</field>
+        <operation>equals</operation>
+        <value>公開中</value>
+    </filters>
+    <filters>
+        <field>OpenDate__c</field>
+        <operation>greaterOrEqual</operation>
+        <value>TODAY</value>
+    </filters>
+    <label>002_研修掲載（掲載中）</label>
+    <sharedTo>
+        <allInternalUsers />
+    </sharedTo>
+</ListView>

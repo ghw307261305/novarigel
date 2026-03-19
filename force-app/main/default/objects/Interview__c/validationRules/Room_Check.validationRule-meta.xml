@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Room_Check</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >OR(ISNULL( Room__c ), ISBLANK(Room__c )  )</errorConditionFormula>
+    <errorDisplayField>Room__c</errorDisplayField>
+    <errorMessage>件名を入力してください</errorMessage>
+</ValidationRule>

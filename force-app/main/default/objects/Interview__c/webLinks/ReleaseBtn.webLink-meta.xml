@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WebLink xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ReleaseBtn</fullName>
+    <availability>online</availability>
+    <displayType>button</displayType>
+    <linkType>javascript</linkType>
+    <masterLabel>公開</masterLabel>
+    <openType>onClickJavaScript</openType>
+    <protected>false</protected>
+    <url>{!REQUIRESCRIPT(&quot;/soap/ajax/48.0/connection.js&quot;)}
+{!REQUIRESCRIPT(&quot;/soap/ajax/48.0/apex.js&quot;)}
+
+var varStatus = &apos;{!Interview__c.InterviewStatus__c}&apos;;
+
+
+var result = sforce.apex.execute(
+  &apos;SFTR_O_InterviewWebService&apos;,
+  &apos;release&apos;,
+  {itemId:&apos;{!Interview__c.Id}&apos;}
+);
+
+if(result == &apos;成功&apos;){
+	location.reload();
+} else if (result == &apos;チェック失敗&apos;) {
+	alert(&apos;実行できません!&apos;);
+}else {
+	alert(&apos;公開が失敗してしまった&apos;);
+}</url>
+</WebLink>

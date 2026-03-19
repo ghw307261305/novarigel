@@ -5,6 +5,9 @@
   "description": "Salesforce App",
   "scripts": {
     "lint": "eslint **/{aura,lwc}/**/*.js",
+    "org:create:localdev": "node scripts/run-sf.js org create scratch --definition-file config/project-scratch-def.json --alias novarigel-localdev --set-default",
+    "deploy:localdev": "node scripts/run-sf.js project deploy start --source-dir force-app/main/default/objects/Interview__c --source-dir force-app/main/default/objects/Human__c --source-dir force-app/main/default/classes/HumanPublicRegistrationController.cls --source-dir force-app/main/default/classes/HumanPublicRegistrationService.cls --source-dir force-app/main/default/classes/HumanPublicRegistrationControllerTest.cls --source-dir force-app/main/default/lwc/humanPublicRegistration",
+    "localdev:human": "node scripts/run-sf.js lightning dev component --name humanPublicRegistration",
     "test": "npm run test:unit",
     "test:unit": "sfdx-lwc-jest",
     "test:unit:watch": "sfdx-lwc-jest --watch",
@@ -38,7 +41,7 @@
       "eslint"
     ],
     "**/lwc/**": [
-        "sfdx-lwc-jest -- --bail --findRelatedTests --passWithNoTests"
+      "sfdx-lwc-jest -- --bail --findRelatedTests --passWithNoTests"
     ]
   }
 }

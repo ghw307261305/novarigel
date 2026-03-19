@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>TeachingSex_CheckForInputDisable</fullName>
+    <active>true</active>
+    <errorConditionFormula
+  >AND (RecordType.Name = &quot;個人&quot;,AND(NOT(ISBLANK(RequestActivity__c)),NOT(INCLUDES(RequestActivity__c,&quot;部活動指導(運動系)&quot;)),NOT(INCLUDES(RequestActivity__c,&quot;部活動指導(文化系)&quot;))),NOT(ISBLANK(TeachingSex__c)))</errorConditionFormula>
+    <errorDisplayField>TeachingSex__c</errorDisplayField>
+    <errorMessage
+  >選択した希望内容に、部活動指導(運動系)または部活動指導(運動系)が含まれない</errorMessage>
+</ValidationRule>
